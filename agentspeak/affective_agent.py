@@ -180,6 +180,31 @@ class Personality():
         """
         self.traits = traits
         
+        
+class TermQuery(agentspeak.runtime.TermQuery):
+    
+    def execute_concern(self, agent, intention, concern):
+        # Boolean constants.
+        term = agentspeak.evaluate(self.term, intention.scope)
+        if term is True:
+            yield
+            return
+        elif term is False:
+            return
+
+        choicepoint = object()
+            
+        print(concern, type(concern))
+        concern = copy.deepcopy(concern)
+        intention.stack.append(choicepoint)
+        
+
+        if agentspeak.unify(term, concern.head, intention.scope, intention.stack):
+            for _ in concern.query.execute(agent, intention):
+                yield
+
+        agentspeak.reroll(intention.scope, intention.stack, choicepoint)
+        
 class AffectiveAgent(agentspeak.runtime.Agent):
     """
     This class is a subclass of the Agent class. 
@@ -254,6 +279,34 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             concern (Concern): Concern to be added.
         """
         self.concerns[(concern.head.functor, len(concern.head.args))].append(concern)
+        
+    def test_concern(self, term, intention, concern):
+        """This function is used to know the value of a concern
+
+        Args:
+            term (Literal): Term of the concern
+            intention (Intention): Intention of the agent
+            concern (Concern): Concern of the agent
+
+        Raises:
+            AslError:  If the term is not a Literal
+
+        Returns:
+            OR[bool, str]: If the concern is not found, return False. If the concern is found, return the value of the concern
+        """
+        term = agentspeak.evaluate(term, intention.scope)
+
+        if not isinstance(term, agentspeak.Literal):
+            raise AslError("expected concern literal, got: '%s'" % term)
+
+        query = TermQuery(term)
+
+        try:
+            next(query.execute_concern(self, intention, concern))
+            concern_value = " ".join(asl_str(agentspeak.freeze(t, intention.scope, {})) for t in term.args)
+            return concern_value
+        except StopIteration:
+            return False
         
     def call(self, trigger: agentspeak.Trigger, goal_type:agentspeak.GoalType, term: agentspeak.Literal, calling_intention: agentspeak.runtime.Intention, delayed: bool = False):
         """ This method is used to call an event.

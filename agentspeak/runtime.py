@@ -188,28 +188,6 @@ class ActionQuery:
 class TermQuery:
     def __init__(self, term):
         self.term = term
-       
-    def execute_concern(self, agent, intention, concern):
-        # Boolean constants.
-        term = agentspeak.evaluate(self.term, intention.scope)
-        if term is True:
-            yield
-            return
-        elif term is False:
-            return
-
-        choicepoint = object()
-            
-        print(concern, type(concern))
-        concern = copy.deepcopy(concern)
-        intention.stack.append(choicepoint)
-        
-
-        if agentspeak.unify(term, concern.head, intention.scope, intention.stack):
-            for _ in concern.query.execute(agent, intention):
-                yield
-
-        agentspeak.reroll(intention.scope, intention.stack, choicepoint)
             
     def execute(self, agent, intention):
         # Boolean constants.
@@ -231,7 +209,7 @@ class TermQuery:
                 yield
 
         choicepoint = object()
-        # Follow concerns.
+
         for rule in agent.rules[group]:
             rule = copy.deepcopy(rule)
             intention.stack.append(choicepoint)
@@ -240,19 +218,6 @@ class TermQuery:
                     yield
 
             agentspeak.reroll(intention.scope, intention.stack, choicepoint)
-
-            
-        """print([concern for e in agent.concerns.values() for concern in e], "concern group")
-        for concern in [concern for e in agent.concerns.values() for concern in e]:
-            concern = copy.deepcopy(concern)
-            intention.stack.append(choicepoint)
-         
-
-            if agentspeak.unify(term, concern.head, intention.scope, intention.stack):
-                for _ in concern.query.execute(agent, intention):
-                    yield
-
-            agentspeak.reroll(intention.scope, intention.stack, choicepoint)"""
 
     def __str__(self):
         return str(self.term)
@@ -651,33 +616,7 @@ class Agent:
         except StopIteration:
             return False
         
-    def test_concern(self, term, intention, concern):
-        """This function is used to know the value of a concern
-
-        Args:
-            term (Literal): Term of the concern
-            intention (Intention): Intention of the agent
-            concern (Concern): Concern of the agent
-
-        Raises:
-            AslError:  If the term is not a Literal
-
-        Returns:
-            OR[bool, str]: If the concern is not found, return False. If the concern is found, return the value of the concern
-        """
-        term = agentspeak.evaluate(term, intention.scope)
-
-        if not isinstance(term, agentspeak.Literal):
-            raise AslError("expected concern literal, got: '%s'" % term)
-
-        query = TermQuery(term)
-
-        try:
-            next(query.execute_concern(self, intention, concern))
-            concern_value = " ".join(asl_str(agentspeak.freeze(t, intention.scope, {})) for t in term.args)
-            return concern_value
-        except StopIteration:
-            return False
+    
 
     def remove_belief(self, term, intention):
         term = agentspeak.evaluate(term, intention.scope)
