@@ -98,7 +98,7 @@ class Personality():
         """
         self.traitsLabels = []
         self.traits = []
-        self.setTraitsLabels()
+        self.setTraitsLabels([])
         if self.traitsLabels != None:
             self.traits = [0.0] * len(self.traitsLabels)
      
