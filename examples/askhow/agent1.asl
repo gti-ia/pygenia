@@ -9,10 +9,10 @@ me(100,2).
         .print("Plan Añadido");
         .wait(5000);
         !hello;
-        -me(100);
+        -me(100,2);
         !hello;
-        +me(100);
+        +me(100,4);
         !hello
 .
 
-concern__(X):- me(100,2) & X = 1 | me(101) & X = 2 | me(103) & X = 4.
+concern__(X):- me(100,2) & X = 1 | me(101,4) & X = 2 | me(103,1) & X = 4.

@@ -193,8 +193,7 @@ class TermQuery(agentspeak.runtime.TermQuery):
             return
 
         choicepoint = object()
-            
-        print(concern, type(concern))
+
         concern = copy.deepcopy(concern)
         intention.stack.append(choicepoint)
         
@@ -343,12 +342,9 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         if goal_type == agentspeak.GoalType.belief: 
             # We recieve a belief and the affective cycle is activated.
             # We need to provide to the sunction the term and the Trigger type.
-            if not any([annotation.functor == "source" for annotation in term.annots]):
-                print("There no source annotation in the belief.")
             self.event_queue.append((term, trigger))
             self.appraisal((term, trigger),0)
             if trigger == agentspeak.Trigger.addition:
-                print("Belief addition: ", term) 
                 self.add_belief(term, calling_intention.scope)
             else: 
                 found = self.remove_belief(term, calling_intention) 
@@ -662,17 +658,19 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                 if len(self.concerns):
                     desirability =  self.desirability(event)
                     self.AV["desirability"] = desirability
-                    print("Desirability of event ",event[0], " : ",self.AV["desirability"])              
 
                 # Calculating likelihood. 
                 likelihood = self.likelihood(event)
+                self.AV["likelihood"] = likelihood
 
                 # Calculating causal attribution
                 causal_attribution = self.causalAttribution(event)
+                self.AV["causal_attribution"] = causal_attribution
 
                 # Calculating controllability: 
                 if len(self.concerns):
                     controllability = self.controllability(event,concern_value,desirability)
+                    self.AV["controllability"] = controllability
                     pass
                 result = True
         else:
@@ -798,7 +796,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         
          
         if concern != None:
-            print(event)
             if event[1].name == "addition":
                 # adding the new literal if the event is an addition of a belief
                 concernVal = self.applyConcernForAddition(event,concern) 
@@ -808,7 +805,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             if concernVal != None:
                 if float(concernVal) < 0 or float(concernVal) > 1:
                     concernVal = 0
-                    print("Desirability can't be calculated. Concerns value out or range [0,1]!")
                     
         return float(concernVal)
     
@@ -852,7 +848,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         self.remove_belief(event[0], agentspeak.runtime.Intention())
         # We calculate the concern value
         concern_value = self.test_concern(concern.head, agentspeak.runtime.Intention(), concern)
-        print("Concern value for deletion: "+str(concern_value))
         # We add the belief to the agent's belief base again
         self.add_belief(event[0], agentspeak.runtime.Intention())
         
@@ -868,13 +863,10 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         
         ped = PairEventDesirability(None)
         if True: # while self.lock instead of True for the real implementation
-            print(self.C)
-            print(self.event_queue)
             if self.event_queue:
                 ped.event = self.event_queue.pop()
             
         if ped.event == None:
-            print(ped.event)
             self.appraisal(None, 0.0) 
             self.currentEvent = None
             self.eventProcessedInCycle = False
@@ -989,11 +981,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             if calculated_as != None:
                  # PAD current_as = (PAD) getAS(); 
                 current_as = self.AS
-                print("expectedness: " + str(self.AV["expectedness"]) +
-                        ", desirability: " + str(self.AV["desirability"]) +
-                        ", causal_attribution: " + str(self.AV["causal_attribution"]) +
-                        ", likelihood: " + str(self.AV["likelihood"]) +
-                        ", controllability: " + str(self.AV["controllability"]))
                 
                 tmpVal = None
                 vDiff_P = None
@@ -1235,9 +1222,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         Returns:
             bool: True if the instruction was executed
         """
-        try: 
-            print(self.intention_selected)
-            print(self.beliefs)
+        try:
             if self.intention_selected.instr.f(self, self.intention_selected):
                 self.intention_selected.instr = self.intention_selected.instr.success # We set the intention.instr to the instr.success
             else:
@@ -1372,7 +1357,6 @@ class Environment(agentspeak.runtime.Environment):
             concern = Concern(head, consequence)
             agent.add_concern(concern)
             concern_value = agent.test_concern(head, agentspeak.runtime.Intention(), concern)
-            print(concern_value)
             
             
 
