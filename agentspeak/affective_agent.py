@@ -1362,31 +1362,8 @@ class Environment(agentspeak.runtime.Environment):
 
         # Trying different ways to multiprocess the cycles of the agents
         multiprocesing = "asyncio2" # threading, asyncio, concurrent.futures, NO
-        rc = 1 # number of cycles
-        
-        if multiprocesing == "asyncio":
-            async def hola_thread():
-                tiempo_inicial = time.time()
-                
-                await self.agent_funcs_done
-                t = time.time() - tiempo_inicial
-
-            async def agent_func():
-                # Ejecutar la regla semántica
-                if "E" in agent.C:
-                    for i in range(len(agent.C["E"])):
-                        agent.current_step = "Appr"
-                        agent.affectiveTransitionSystem() # 
-                # Sleep 5 seconds
-                await asyncio.sleep(0.001)
-
-            async def main():
-                self.agent_funcs_done = asyncio.gather(*[agent_func() for i in range(rc)])
-                await asyncio.gather(hola_thread(), self.agent_funcs_done)
-
-            asyncio.run(main())
             
-        elif multiprocesing == "asyncio2":
+        if multiprocesing == "asyncio2":
             import asyncio
 
             async def main():
