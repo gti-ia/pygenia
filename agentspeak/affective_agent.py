@@ -373,19 +373,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             if agentspeak.unifies_annotated(event.head, frozen): 
                 intention.waiter = None 
 
-        if goal_type == agentspeak.GoalType.achievement and trigger == agentspeak.Trigger.addition:
-            
-            self.C["E"] = [term] if "E" not in self.C else self.C["E"] + [term]
-            self.current_step = "SelEv"
-            self.applySemanticRuleDeliberate()
-            return True
-            
-        
-        if goal_type == agentspeak.GoalType.achievement and trigger == agentspeak.Trigger.addition: 
-            raise AslError("no applicable plan for %s%s%s/%d" % (
-                trigger.value, goal_type.value, frozen.functor, len(frozen.args))) 
-        elif goal_type == agentspeak.GoalType.test:
-            return self.test_belief(term, calling_intention) 
 
         # If the goal is an achievement and the trigger is an removal, then the agent will delete the goal from his list of intentions
         if goal_type == agentspeak.GoalType.achievement and trigger == agentspeak.Trigger.removal: 
@@ -401,7 +388,8 @@ class AffectiveAgent(agentspeak.runtime.Agent):
 
                 if intention.head_term.functor == term.functor: 
                     if agentspeak.unifies(term.args, intention.head_term.args):
-                        intention_stack.remove(intention)   
+                        intention_stack.remove(intention)  
+            return True 
 
         # If the goal is an tellHow and the trigger is an addition, then the agent will add the goal received as string to his list of plans
         if goal_type == agentspeak.GoalType.tellHow and trigger == agentspeak.Trigger.addition:
@@ -450,7 +438,8 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             
           
             # Add the plan to the agent
-            self.add_plan(plan) 
+            self.add_plan(plan)
+            return True 
 
         # If the goal is an askHow and the trigger is an addition, then the agent will find the plan in his list of plans and send it to the agent that asked
         if goal_type == agentspeak.GoalType.askHow and trigger == agentspeak.Trigger.addition: 
@@ -470,8 +459,22 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                         delete_plan.append(differents)
             for differents in delete_plan:
                 plan.remove(differents)
+            return True
 
-        return True 
+            
+        self.C["E"] = [term] if "E" not in self.C else self.C["E"] + [term]
+        self.current_step = "SelEv"
+        self.applySemanticRuleDeliberate()
+        return True
+            
+        
+        #if goal_type == agentspeak.GoalType.achievement and trigger == agentspeak.Trigger.addition: 
+        #    raise AslError("no applicable plan for %s%s%s/%d" % (
+        #        trigger.value, goal_type.value, frozen.functor, len(frozen.args))) 
+        #elif goal_type == agentspeak.GoalType.test:
+        #    return self.test_belief(term, calling_intention) 
+
+        
     
     def applySelEv(self) -> bool:
         """
