@@ -605,14 +605,14 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             "SelAppl": self.applySelAppl,
             "AddIM": self.applyAddIM
         }
-        if self.current_step in options:
+
+        flag = True
+        while flag == True and self.current_step in options:
+            print(self.current_step)
             flag = options[self.current_step]()
-            if flag:
-                self.applySemanticRuleDeliberate()
-            else:
-                return True
+        
         return True
-    
+
     def affectiveTransitionSystem(self):
         """
         This method is used to apply the second part of the reasoning cycle.
