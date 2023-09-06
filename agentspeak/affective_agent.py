@@ -578,7 +578,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         if not self.delayed and self.C["I"]: 
             for intention_stack in self.C["I"]: 
                 if intention_stack[-1] == self.delayed: 
-                    intention_stack.append(self.T["i"]) 
+                    intention_stack.append(self.T["i"])
                     return True
         new_intention_stack = collections.deque() 
         new_intention_stack.append(self.T["i"]) 
@@ -631,13 +631,11 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         }
         
         runingAffectiveCycle = True
-        
-        if self.current_step in options:
+
+        flag = True
+        while flag == True and self.current_step in options:
             flag = options[self.current_step]()
-            if flag:
-                self.affectiveTransitionSystem()
-            else:
-                return True
+
         return True
     
     def appraisal(self, event, concern_value):
