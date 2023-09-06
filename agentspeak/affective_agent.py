@@ -464,16 +464,14 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             
         self.C["E"] = [term] if "E" not in self.C else self.C["E"] + [term]
         self.current_step = "SelEv"
-        self.applySemanticRuleDeliberate()
-        return True
-            
+        self.applySemanticRuleDeliberate()            
         
         #if goal_type == agentspeak.GoalType.achievement and trigger == agentspeak.Trigger.addition: 
         #    raise AslError("no applicable plan for %s%s%s/%d" % (
         #        trigger.value, goal_type.value, frozen.functor, len(frozen.args))) 
         #elif goal_type == agentspeak.GoalType.test:
         #    return self.test_belief(term, calling_intention) 
-
+        return True
         
     
     def applySelEv(self) -> bool:
@@ -611,7 +609,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
 
         flag = True
         while flag == True and self.current_step in options:
-            print(self.current_step)
             flag = options[self.current_step]()
         
         return True
@@ -1162,12 +1159,14 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             "CtlInt": self.applyCtlInt,
             "ExecInt": self.applyExecInt
         }
+        
+        if self.current_step == "SelInt":
+            if not options[self.current_step]():
+                return False
+            
         if self.current_step in options:
             flag = options[self.current_step]()
-            if not flag:
-                return False
-            else:
-                return True
+            return flag
         else:
             return True
 
@@ -1212,7 +1211,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             self.current_step = "CtlInt"
         else:
             self.current_step = "ExecInt"
-        self.step()
+
         return True
     
     def applyExecInt(self) -> bool:
