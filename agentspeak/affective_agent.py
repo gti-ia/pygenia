@@ -443,7 +443,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
 
         # If the goal is an askHow and the trigger is an addition, then the agent will find the plan in his list of plans and send it to the agent that asked
         if goal_type == agentspeak.GoalType.askHow and trigger == agentspeak.Trigger.addition: 
-           self.T["e"] =  term.args[2]
+           self.T["e"] =  agentspeak.runtime.Event(trigger,goal_type,term.args[2])
            return self._ask_how(term)
 
         # If the goal is an unTellHow and the trigger is a removal, then the agent will delete the goal from his list of plans   
@@ -462,7 +462,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             return True
 
             
-        self.C["E"] = [term] if "E" not in self.C else self.C["E"] + [term]
+        self.C["E"] = [agentspeak.runtime.Event(trigger,goal_type,term)] if "E" not in self.C else self.C["E"] + [agentspeak.runtime.Event(trigger,goal_type,term)]
         self.current_step = "SelEv"
         self.applySemanticRuleDeliberate()            
         
@@ -487,7 +487,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             # Select one event from the list of events and remove it from the list without using pop
             self.T["e"] = self.C["E"][0]
             self.C["E"] = self.C["E"][1:]
-            self.frozen = agentspeak.freeze(self.T["e"], agentspeak.runtime.Intention().scope, {}) 
+            self.frozen = agentspeak.freeze(self.T["e"].head, agentspeak.runtime.Intention().scope, {}) 
             self.T["i"] = agentspeak.runtime.Intention()
             self.current_step = "RelPl"
             self.delayed = True
@@ -513,7 +513,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         plans = self.plans.values()
         for plan in plans:
             for differents in plan:
-                if self.T["e"].functor in differents.head.functor:
+                if self.T["e"].head.functor in differents.head.functor:
                     RelPlan[(differents.trigger, differents.goal_type, differents.head.functor, len(differents.head.args))].append(differents)
          
         if not RelPlan:
@@ -535,7 +535,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         - If the plans were found, the dictionary T["Ap"] will be filled with the plans found and the current step will be changed to "SelAppl"
         - If not plans were found, return False
         """
-        self.T["Ap"] = self.T["R"][(agentspeak.Trigger.addition, agentspeak.GoalType.achievement, self.frozen.functor, len(self.frozen.args))] 
+        self.T["Ap"] = self.T["R"][(self.T["e"].trigger, self.T["e"].goal_type, self.frozen.functor, len(self.frozen.args))] 
         self.current_step = "SelAppl"
         return self.T["Ap"] != []
     
@@ -573,7 +573,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         """
         self.T["i"].head_term = self.frozen 
         self.T["i"].instr = self.T["p"].body 
-        self.T["i"].calling_term = self.T["e"] 
+        self.T["i"].calling_term = self.T["e"].head 
 
         if not self.delayed and self.C["I"]: 
             for intention_stack in self.C["I"]: 
@@ -1293,7 +1293,7 @@ class Environment(agentspeak.runtime.Environment):
             
         """
         
-        agent_cls = AffectiveAgent
+        #agent_cls = AffectiveAgent
         
         log = agentspeak.Log(LOGGER, 3)
         agent = agent_cls(self, self._make_name(name or source.name))
@@ -1347,7 +1347,8 @@ class Environment(agentspeak.runtime.Environment):
             # Start the first part of the reasoning cycle.
             agent.current_step = "SelEv"
             term = ast_goal.atom.accept(agentspeak.runtime.BuildTermVisitor({}))
-            agent.C["E"] = [term] if "E" not in agent.C else agent.C["E"] + [term]
+            f_event = agentspeak.runtime.Event(agentspeak.Trigger.addition, agentspeak.GoalType.achievement,term)
+            agent.C["E"] = [f_event] if "E" not in agent.C else agent.C["E"] + [f_event]
                    
          # Add rules to agent prototype.
         for concern in ast_agent.concerns:
@@ -1371,8 +1372,8 @@ class Environment(agentspeak.runtime.Environment):
                     # This function will just sleep for 3 seconds and then set an event
                     #await asyncio.sleep(3)
                     await asyncio.sleep(3)
-                    agent.current_step = "SelEv"
-                    agent.applySemanticRuleDeliberate()
+                    #agent.current_step = "Appr"
+                    #agent.affectiveTransitionSystem()
                     await asyncio.sleep(5)
                     event.set()
 
