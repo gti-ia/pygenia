@@ -464,7 +464,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             
         self.C["E"] = [agentspeak.runtime.Event(trigger,goal_type,term)] if "E" not in self.C else self.C["E"] + [agentspeak.runtime.Event(trigger,goal_type,term)]
         self.current_step = "SelEv"
-        self.applySemanticRuleDeliberate()            
+        self.applySemanticRuleDeliberate(delayed, calling_intention)            
         
         #if goal_type == agentspeak.GoalType.achievement and trigger == agentspeak.Trigger.addition: 
         #    raise AslError("no applicable plan for %s%s%s/%d" % (
@@ -490,10 +490,8 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             self.frozen = agentspeak.freeze(self.T["e"].head, agentspeak.runtime.Intention().scope, {}) 
             self.T["i"] = agentspeak.runtime.Intention()
             self.current_step = "RelPl"
-            self.delayed = True
         else:
             self.current_step = "SelEv"
-            self.delayed = False
             return False
             
         return True
@@ -562,7 +560,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                         return True
         return False
     
-    def applyAddIM(self) -> bool:
+    def applyAddIM(self, delayed, calling_intention) -> bool:
         """
         This method is used to add the intention to the intention stack of the agent
 
@@ -575,11 +573,11 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         self.T["i"].instr = self.T["p"].body 
         self.T["i"].calling_term = self.T["e"].head 
 
-        if not self.delayed and self.C["I"]: 
+        if not delayed and self.C["I"]: 
             for intention_stack in self.C["I"]: 
-                if intention_stack[-1] == self.delayed: 
+                if intention_stack[-1] == calling_intention: 
                     intention_stack.append(self.T["i"])
-                    return True
+                    return False
         new_intention_stack = collections.deque() 
         new_intention_stack.append(self.T["i"]) 
         
@@ -589,7 +587,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         self.current_step = "SelInt"
         return True      
     
-    def applySemanticRuleDeliberate(self):
+    def applySemanticRuleDeliberate(self, delayed=False, calling_intention=agentspeak.runtime.Intention):
         """
         This method is used to apply the first part of the reasoning cycle.
         This part consists of the following steps:
@@ -609,7 +607,10 @@ class AffectiveAgent(agentspeak.runtime.Agent):
 
         flag = True
         while flag == True and self.current_step in options:
-            flag = options[self.current_step]()
+            if self.current_step == "AddIM":
+                flag = options[self.current_step](delayed, calling_intention)
+            else:
+                flag = options[self.current_step]()
         
         return True
 
@@ -1370,11 +1371,12 @@ class Environment(agentspeak.runtime.Environment):
             async def main():
                 async def affective():
                     # This function will just sleep for 3 seconds and then set an event
-                    #await asyncio.sleep(3)
+                    '''
                     await asyncio.sleep(3)
-                    #agent.current_step = "Appr"
-                    #agent.affectiveTransitionSystem()
-                    await asyncio.sleep(5)
+                    agent.current_step = "Appr"
+                    agent.affectiveTransitionSystem()
+                    await asyncio.sleep(1)
+                    '''
                     event.set()
 
                 async def rational():
