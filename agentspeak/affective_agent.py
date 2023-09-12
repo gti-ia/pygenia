@@ -242,8 +242,9 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         self.T = {}
         
         # Circunstance initialization
-        self.C = {"I":collections.deque(),"E":[],"A":[]}
-        self.C["I"] = collections.deque()
+        self.C = {"I":collections.deque(),
+                  "E":[],
+                  "A":[]}
         
         #self.Ag = {"P": Personality(), "cc": []} # Personality and concerns definition
 
@@ -253,8 +254,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         
         self.Mem = {} # Affective memory definition (⟨event 𝜀, affective value av⟩)
         
-        #self.concerns = collections.defaultdict(lambda: []) if concerns is None else concerns
-
         self.Cc = collections.defaultdict(lambda: []) if concerns is None else concerns
         
         self.event_queue = []
@@ -281,7 +280,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         Args:
             concern (Concern): Concern to be added.
         """
-        self.concerns[(concern.head.functor, len(concern.head.args))].append(concern)
+        self.Cc[(concern.head.functor, len(concern.head.args))].append(concern)
         
     def test_concern(self, term, intention, concern):
         """This function is used to know the value of a concern
@@ -627,7 +626,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         - Select Coping Strategy
         - Coping
         """
-        
+
         options = {
             "Appr" : self.applyAppraisal,
             "UpAs" : self.applyUpdateAffState,
@@ -658,7 +657,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         result = False
         if event != None:
                 # Calculating desirability
-                if len(self.concerns):
+                if len(self.Cc):
                     desirability =  self.desirability(event)
                     self.AV["desirability"] = desirability
 
@@ -671,7 +670,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                 self.AV["causal_attribution"] = causal_attribution
 
                 # Calculating controllability: 
-                if len(self.concerns):
+                if len(self.Cc):
                     controllability = self.controllability(event,concern_value,desirability)
                     self.AV["controllability"] = controllability
                     pass
@@ -795,7 +794,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             float: Desirability of the event.
         """
         concernVal = None
-        concern = self.concerns[("concern__",1)][0] # This function return the first concern of the agent
+        concern = self.Cc[("concern__",1)][0] # This function return the first concern of the agent
         
          
         if concern != None:
@@ -891,10 +890,10 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         """
         
         SelectingCs = True
-        while SelectingCs() and self.C["CS"]:
+        while SelectingCs and self.C["CS"]:
             SelectingCs = self.cope()
-        self.current_step = "Appr"
-        return True
+        #self.current_step = "Appr"
+        return False
     
     def cope(self):
         """
@@ -919,11 +918,9 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         Returns:
             bool: True if the coping strategy was selected, False otherwise.
         """
-        """
         self.C["CS"] = []
-        self.selectCs() 
+        #self.selectCs() 
         self.current_step = "Cope"
-        """
         return True
     
     def selectCs(self):
@@ -1378,7 +1375,7 @@ class Environment(agentspeak.runtime.Environment):
                 async def affective():
                     # This function will just sleep for 3 seconds and then set an event
                     
-                    await asyncio.sleep(3)
+                    await asyncio.sleep(1)
                     agent.current_step = "Appr"
                     agent.affectiveTransitionSystem()
                     await asyncio.sleep(1)
