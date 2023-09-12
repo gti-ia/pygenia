@@ -227,38 +227,78 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             rules (dict): Rules of the agent.
             plans (dict): Plans of the agent.
             current_step (str): Current step of the agent.
-            T (dict): is the temporary information of the current 
+            P (dict): Personality of the agent containing:
+                - tr (dict): personality traits
+                - rl: rationality level
+                - cs (list): set of coping strategies
+            Cc: Concerns of the agent
+            C (dict): current circumstance represented by a tuple
+            composed of:
+                - I: set of intentions
+                - E: set of events
+                - A: set of actions
+            T (dict): is the temporary information of the current
             rational cycle consisting of a dictionary containing:
                 - "p": Applicable plan.
                 - "Ap": Applicable plans.
                 - "i": Intention.
                 - "R": Relevant plans.
                 - "e": Event.
+            Mem (dict): Affective memory
+            Ta: Temporal information of the affective cycle. Contains:
+                - Ub:
+                  - Ba: set of beliefs that are going to be added to the belief base
+                  - Br: set of beliefs that are going to be removed from the belief base
+                  - st: identifier of the step st of the cycle in which the beliefs are
+                    going to be added or removed
+                - Av: set of appraisal variables
+                - Cs: set of coping strategies to be executed
+                - Ae: set of emotions that can be elicited by the appraisal process
+                - Ee: set of empathic emotions that can be triggered by the empathic
+                  appraisal process
+                - Fe: the final emotion (or emotions) resulting from the emotion selection
+                  process
              
         """
         super(AffectiveAgent, self).__init__(env, name, beliefs, rules, plans)
         
         self.current_step = ""
-        self.T = {}
-        
-        # Circunstance initialization
-        self.C = {"I":collections.deque(),
-                  "E":[],
-                  "A":[]}
-        
-        #self.Ag = {"P": Personality(), "cc": []} # Personality and concerns definition
 
-        self.P = {"tr":{"O":0,"C":0,"E":0,"A":0,"N":0},"rl":0,"cs":[]}
+        # Personality definition
+        # self.P = Personality()
+        self.P = {"tr": {"O":0,"C":0,"E":0,"A":0,"N":0},
+                  "rl": 0,
+                  "cs": []}
         
-        self.Ta = {"mood": {"P":0,"A":0}, "emotion":{"P":0,"A":0}} # Temporal affective state definition
-        
-        self.Mem = {} # Affective memory definition (⟨event 𝜀, affective value av⟩)
-        
+        # Concerns definition
         self.Cc = collections.defaultdict(lambda: []) if concerns is None else concerns
+
+        # Circunstance definition
+        self.C = {"I": collections.deque(),
+                  "E": [],
+                  "A": []}
+
+        # Temporary information of the current rational cycle definition
+        self.T = {"p": None,
+                  "Ap": [],
+                  "i": None,
+                  "R": [],
+                  "e":None}
+                
+        # Affective memory definition (⟨event 𝜀, affective value av⟩)
+        self.Mem = {}
         
+        # Temporal information of the affective cycle definition
+        self.Ta = {"Ub": {"Ba": [], "Br": [], "st": None},
+                   "Av": {"desirability": None, "likelihood": None, "causal attribution": None, "controllability": None},
+                   "Cs": [],
+                   "Ae": [],
+                   "Ee": [],
+                   "Fe": [],
+                   "mood": {"P":0,"A":0},}
+                   
         self.event_queue = []
-        self.AV = {"desirability": None} 
-         
+
         self.initAffectiveThreshold()
          
         self.fulfilledExpectations = []
@@ -659,28 +699,28 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                 # Calculating desirability
                 if len(self.Cc):
                     desirability =  self.desirability(event)
-                    self.AV["desirability"] = desirability
+                    self.Ta["Av"]["desirability"] = desirability
 
                 # Calculating likelihood. 
                 likelihood = self.likelihood(event)
-                self.AV["likelihood"] = likelihood
+                self.Ta["Av"]["likelihood"] = likelihood
 
                 # Calculating causal attribution
                 causal_attribution = self.causalAttribution(event)
-                self.AV["causal_attribution"] = causal_attribution
+                self.Ta["Av"]["causal_attribution"] = causal_attribution
 
                 # Calculating controllability: 
                 if len(self.Cc):
                     controllability = self.controllability(event,concern_value,desirability)
-                    self.AV["controllability"] = controllability
+                    self.Ta["Av"]["controllability"] = controllability
                     pass
                 result = True
         else:
-            self.AV["desirability"] = None
-            self.AV["expectedness"] = None
-            self.AV["likelihood"] = None
-            self.AV["causal_attribution"] = None
-            self.AV["controllability"] = None
+            self.Ta["Av"]["desirability"] = None
+            self.Ta["Av"]["expectedness"] = None
+            self.Ta["Av"]["likelihood"] = None
+            self.Ta["Av"]["causal_attribution"] = None
+            self.Ta["Av"]["controllability"] = None
         return result
     
     def controllability(self, event, concernsValue, desirability):
@@ -1082,20 +1122,20 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             PAD: Affective state.
         """
         em = []
-        if self.AV["expectedness"] != None and self.AV["expectedness"] < 0:
+        if self.Ta["Av"]["expectedness"] != None and self.Ta["Av"]["expectedness"] < 0:
             em.append("surprise")
-        if self.AV["desirability"] != None and self.AV["likelihood"] != None:
-            if self.AV["desirability"] > 0.5:
-                if self.AV["likelihood"] < 1:
+        if self.Ta["Av"]["desirability"] != None and self.Ta["Av"]["likelihood"] != None:
+            if self.Ta["Av"]["desirability"] > 0.5:
+                if self.Ta["Av"]["likelihood"] < 1:
                     em.append("hope")
-                elif self.AV["likelihood"] == 1:
+                elif self.Ta["Av"]["likelihood"] == 1:
                     em.append("joy")
             else:
-                if self.AV["likelihood"] < 1:
+                if self.Ta["Av"]["likelihood"] < 1:
                     em.append("fear")
-                elif self.AV["likelihood"] == 1:
+                elif self.Ta["Av"]["likelihood"] == 1:
                     em.append("sadness")
-                if self.AV["causal_attribution"] != None and self.AV["controllability"] != None and self.AV["causal_attribution"] == "other" and self.AV["controllability"] > 0.7:
+                if self.Ta["Av"]["causal_attribution"] != None and self.Ta["Av"]["controllability"] != None and self.Ta["Av"]["causal_attribution"] == "other" and self.Ta["Av"]["controllability"] > 0.7:
                     em.append("anger")
         result = PAD()
         result.setP(0.0)
@@ -1545,7 +1585,7 @@ class Concern:
 class PairEventDesirability:
         def __init__(self, event):
             self.event = event
-            self.AV = {"desirability": None} 
+            self.av = {} 
 
 class AffectiveState:
 
