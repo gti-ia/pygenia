@@ -242,16 +242,20 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         self.T = {}
         
         # Circunstance initialization
-        self.C = {}
+        self.C = {"I":collections.deque(),"E":[],"A":[]}
         self.C["I"] = collections.deque()
         
-        self.Ag = {"P": Personality(), "cc": []} # Personality and concerns definition
+        #self.Ag = {"P": Personality(), "cc": []} # Personality and concerns definition
+
+        self.P = {"tr":{"O":0,"C":0,"E":0,"A":0,"N":0},"rl":0,"cs":[]}
         
-        self.Ta = {"mood": {}, "emotion":{}} # Temporal affective state definition
+        self.Ta = {"mood": {"P":0,"A":0}, "emotion":{"P":0,"A":0}} # Temporal affective state definition
         
         self.Mem = {} # Affective memory definition (⟨event 𝜀, affective value av⟩)
         
-        self.concerns = collections.defaultdict(lambda: []) if concerns is None else concerns
+        #self.concerns = collections.defaultdict(lambda: []) if concerns is None else concerns
+
+        self.Cc = collections.defaultdict(lambda: []) if concerns is None else concerns
         
         self.event_queue = []
         self.AV = {"desirability": None} 
@@ -915,17 +919,18 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         Returns:
             bool: True if the coping strategy was selected, False otherwise.
         """
-       
+        """
         self.C["CS"] = []
         self.selectCs() 
         self.current_step = "Cope"
+        """
         return True
     
     def selectCs(self):
         """
         This method is used to select the coping strategy.
         """
-        
+        """
         AClabel = self.C["AfE"]
         logCons = False
         asContainsCs = False
@@ -938,7 +943,8 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                     asContainsCs = True
             if asContainsCs:
                 self.C["AfE"] = []
-                
+        """
+        pass        
     
     
     def applyUpdateAffState(self):
@@ -1371,12 +1377,12 @@ class Environment(agentspeak.runtime.Environment):
             async def main():
                 async def affective():
                     # This function will just sleep for 3 seconds and then set an event
-                    '''
+                    
                     await asyncio.sleep(3)
                     agent.current_step = "Appr"
                     agent.affectiveTransitionSystem()
                     await asyncio.sleep(1)
-                    '''
+                    
                     event.set()
 
                 async def rational():
