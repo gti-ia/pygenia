@@ -29,6 +29,19 @@ from agentspeak import UnaryOp, BinaryOp, AslError, asl_str
 LOGGER = agentspeak.get_logger(__name__)
 C = {}
 
+class Instruction(agentspeak.runtime.Instruction):
+    def __init__(
+        self,
+        f,
+        loc=None,
+        extra_locs=(),
+        term=None,
+        goal_type=None,
+    ):
+        super(Instruction, self).__init__(f, loc, extra_locs)
+        self.term = term
+        self.goal_type = goal_type
+
 class PADExpression():
     """
     This class is used to represent the PAD expressions.
@@ -465,7 +478,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             else: 
                 context = TrueQuery() 
 
-            body = agentspeak.runtime.Instruction(agentspeak.runtime.noop) 
+            body = Instruction(agentspeak.runtime.noop) 
             body.f = agentspeak.runtime.noop 
             if ast_plan.body: 
                 ast_plan.body.accept(BuildInstructionsVisitor(variables, actions, body, log)) 
@@ -1328,6 +1341,9 @@ class Environment(agentspeak.runtime.Environment):
     Args:
         agentspeak.runtime.Environment: The environment of the agent defined in the agentspeak library
     """
+    def ast_plan_body_visit(self, ast_plan, variables, actions, body, log):
+        ast_plan.body.accept(BuildInstructionsVisitor(variables, actions, body, log))
+        
     def build_agent_from_ast(self, source, ast_agent, actions, agent_cls=agentspeak.runtime.Agent, name=None):
         """
         This method is used to build the agent from the ast
@@ -1362,7 +1378,7 @@ class Environment(agentspeak.runtime.Environment):
             else:
                 context = TrueQuery()
 
-            body = agentspeak.runtime.Instruction(agentspeak.runtime.noop)
+            body = Instruction(agentspeak.runtime.noop)
             body.f = agentspeak.runtime.noop
             if ast_plan.body:
                 ast_plan.body.accept(BuildInstructionsVisitor(variables, actions, body, log))
@@ -1533,6 +1549,10 @@ class ActionQuery(agentspeak.runtime.ActionQuery):
             yield
 
 class BuildInstructionsVisitor(agentspeak.runtime.BuildInstructionsVisitor):
+    def add_instr(self, f, loc=None, extra_locs=(), term=None, goal_type=None):
+        self.tail.success = Instruction(f, loc, extra_locs, term, goal_type)
+        self.tail = self.tail.success
+        return self.tail
     def visit_formula(self, ast_formula):
         if ast_formula.formula_type == agentspeak.FormulaType.add:
             term = ast_formula.term.accept(agentspeak.runtime.BuildTermVisitor(self.variables))
@@ -1555,11 +1575,11 @@ class BuildInstructionsVisitor(agentspeak.runtime.BuildInstructionsVisitor):
         elif ast_formula.formula_type == agentspeak.FormulaType.achieve:
             term = ast_formula.term.accept(agentspeak.runtime.BuildTermVisitor(self.variables))
             self.add_instr(functools.partial(call, agentspeak.Trigger.addition, agentspeak.GoalType.achievement, term),
-                           loc=ast_formula.loc, extra_locs=[ast_formula.term.loc])
+                           loc=ast_formula.loc, extra_locs=[ast_formula.term.loc], term=term, goal_type=agentspeak.GoalType.achievement)
         elif ast_formula.formula_type == agentspeak.FormulaType.achieve_later:
             term = ast_formula.term.accept(agentspeak.runtime.BuildTermVisitor(self.variables))
             self.add_instr(functools.partial(agentspeak.runtime.call_delayed, agentspeak.Trigger.addition, agentspeak.GoalType.achievement, term),
-                           loc=ast_formula.loc, extra_locs=[ast_formula.term.loc])
+                           loc=ast_formula.loc, extra_locs=[ast_formula.term.loc],term=term, goal_type=agentspeak.GoalType.achievement)
         elif ast_formula.formula_type == agentspeak.FormulaType.term:
             query = ast_formula.term.accept(BuildQueryVisitor(self.variables, self.actions, self.log))
             self.add_instr(functools.partial(agentspeak.runtime.push_query, query))

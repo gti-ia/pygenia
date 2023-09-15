@@ -694,7 +694,7 @@ class Agent:
             return False
 
         instr = intention.instr
-
+        
         if not instr:
             intention_stack.pop()
             if not intention_stack:
