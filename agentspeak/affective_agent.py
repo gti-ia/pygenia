@@ -1358,6 +1358,11 @@ class Environment(agentspeak.runtime.Environment):
         log = agentspeak.Log(LOGGER, 3)
         agent = agent_cls(self, self._make_name(name or source.name))
 
+        # Add personality and rationality level to agent prototype.
+        if ast_agent.personality is not None:
+            agent.P["tr"] = ast_agent.personality.traits
+            agent.P["rl"] = ast_agent.personality.rationality_level
+
         # Add rules to agent prototype.
         for ast_rule in ast_agent.rules:
             variables = {}
@@ -1366,7 +1371,6 @@ class Environment(agentspeak.runtime.Environment):
             rule = agentspeak.runtime.Rule(head, consequence)
             agent.add_rule(rule)
         
-
         # Add plans to agent prototype.
         for ast_plan in ast_agent.plans:
             variables = {}
