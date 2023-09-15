@@ -64,6 +64,7 @@ TokenInfo = collections.namedtuple("TokenInfo", "lexeme token loc")
 
 class TokenType(enum.Enum):
     __order__ = """
+                personality
                 space comment
                 paren_open paren_close
                 bracket_open bracket_close
@@ -80,6 +81,8 @@ class TokenType(enum.Enum):
                 fullstop comma semicolon at
                 """
 
+    personality   = Token(r"personality__")
+    
     space         = Token(r"\s+", space=True)
     comment       = Token(r"(//|#).*", comment=True)
 
@@ -146,6 +149,8 @@ class TokenType(enum.Enum):
     comma         = Token(r",")
     semicolon     = Token(r";")
     at            = Token(r"@")
+
+    
 
 
 RE_START_COMMENT = re.compile(r"/\*")

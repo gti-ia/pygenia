@@ -84,6 +84,9 @@ class AstBaseVisitor(object):
     def visit_agent(self, ast_agent):
         pass
 
+    def visit_personality(self, ast_personality):
+        pass
+
 
 class AstNode(object):
     def __init__(self):
@@ -389,6 +392,7 @@ class AstAgent(AstNode):
         self.goals = []
         self.plans = []
         self.concerns = []
+        self.personality = None
 
     def accept(self, visitor):
         return visitor.visit_agent(self)
@@ -745,6 +749,77 @@ def parse_concern(tok, tokens, log):
     else:
         # Just the belief atom.
         return tok, belief_atom
+    
+def parse_personality(tok, tokens, log):
+    tok = next(tokens)
+    if tok.lexeme == ":":
+        personality = AstPersonality()
+        personality.loc = tok.loc
+
+        tok = next(tokens)
+
+        if tok.lexeme != "{":
+            raise log.error("expected {, got '%s'", tok.lexeme, loc=tok.loc)
+        
+
+        personality.traits = parse_personality_traits_array(tok, tokens, log)
+
+        tok = next(tokens)
+
+        if tok.lexeme == ",":
+            tok = next(tokens)
+            try:
+                rl = float(tok.lexeme)
+                personality.rationality_level = rl
+                tok = next(tokens)
+            except:
+                raise log.error("expected a number value, got '%s'", tok.lexeme, loc=tok.loc)
+            
+        
+        if tok.lexeme != "}":
+            raise log.error("expected }, got '%s'", tok.lexeme, loc=tok.loc)
+        
+        tok = next(tokens)
+
+        return tok, personality
+    
+def parse_personality_traits_array(tok, tokens, log):
+    traits = {}
+
+    tok = next(tokens)
+
+    if tok.lexeme != "[":
+        raise log.error("expected [, got '%s'", tok.lexeme, loc=tok.loc)
+
+    tok = next(tokens)
+    while tok.lexeme != "]":
+        tok, trait, value = parse_personality_trait(tok, tokens, log)
+        traits[trait] = value
+        if tok.lexeme == ",":
+            tok = next(tokens)
+
+    return traits
+
+    
+def parse_personality_trait(tok, tokens, log):
+    
+    trait = tok.lexeme
+    tok = next(tokens)
+
+    if tok.lexeme != ":":
+        raise log.error("expected :, got '%s'", tok.lexeme, loc=tok.loc)
+    
+    tok = next(tokens)
+
+    try:
+        value = float(tok.lexeme)
+    except:
+        raise log.error("expected a float value for the personality trait '%s', got '%s'", trait, tok.lexeme, loc=tok.loc)
+
+    
+    tok = next(tokens)
+
+    return tok, trait, value
 
 def parse_initial_goal(tok, tokens, log):
     if tok.lexeme != "!":
@@ -997,7 +1072,19 @@ class AstConcern(AstNode):
         return visitor.visit_concern(self)
 
     def __str__(self):
-        return "%s :- %s" % (self.head, self.consequence)  
+        return "%s :- %s" % (self.head, self.consequence)
+    
+class AstPersonality(AstNode):
+    def __init__(self):
+        super(AstPersonality, self).__init__()
+        self.traits = {}
+        self.rationality_level = None
+
+    def accept(self, visitor):
+        return visitor.visit_personality(self)
+
+    def __str__(self):
+        return "%s :- %s, %s" % ("personality", self.traits, self.rationality_level)  
     
 def parse_agent(filename, tokens, log, included_files, directive=None):
     included_files = included_files | frozenset([os.path.normpath(filename)])
@@ -1113,6 +1200,11 @@ def parse_agent(filename, tokens, log, included_files, directive=None):
                     log.info("missing '.' after this concern", loc=ast_node.loc)
                     raise log.error("expected '.' after concern, got '%s'", tok.lexeme, loc=tok.loc, extra_locs=[ast_node.loc])
                 agent.concerns.append(ast_node)
+        elif tok.lexeme == "personality__":
+            #TK PERSONALITY
+            tok, ast_node = parse_personality(tok, tokens, log) 
+            if isinstance(ast_node, AstPersonality):
+                agent.personality = ast_node
         else:
             log.error("unexpected token: '%s'", tok.lexeme, loc=tok.loc)
 
