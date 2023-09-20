@@ -299,16 +299,16 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                   "e":None}
                 
         # Affective memory definition (⟨event 𝜀, affective value av⟩)
-        self.Mem = {}
+        self.Mem = []
         
         # Temporal information of the affective cycle definition
         self.Ta = {"Ub": {"Ba": [], "Br": [], "st": None},
-                   "Av": {"desirability": None, "likelihood": None, "causal attribution": None, "controllability": None},
+                   "Av": {"desirability": None, "likelihood": None, "causal attribution": None, "controllability": None, "expectedness": None},
                    "Cs": [],
                    "Ae": [],
                    "Ee": [],
                    "Fe": [],
-                   "mood": {"P":0,"A":0},}
+                   "mood": {"P":0,"A":0, "D":0},}
                    
         self.event_queue = []
 
@@ -931,7 +931,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             self.eventProcessedInCycle = True
             
         if self.cleanAffectivelyRelevantEvents(): 
-            self.Mem = {}  
+            self.Mem = [] 
         
         # The next step is Update Aff State
         self.current_step = "UpAs"
@@ -1021,7 +1021,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         """
         result = currentEvent != None
         for ex in self.affRevEventThreshold: 
-            result = result and ex.evaluate(self.C["AS"]["P"], self.C["AS"]["A"], self.C["AS"]["D"])
+            result = result and ex.evaluate(self.Ta["mood"]["P"], self.Ta["mood"]["A"], self.Ta["mood"]["D"])
         return result
     
     def UpdateAS(self):
@@ -1030,12 +1030,12 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         """
         self.DISPLACEMENT = 0.5
         
-        if isinstance(self.AS, PAD): 
+        if isinstance(self.Ta["mood"], PAD): 
             pad = PAD()
             calculated_as = self.deriveASFromAppraisalVariables() 
             if calculated_as != None:
                  # PAD current_as = (PAD) getAS(); 
-                current_as = self.AS
+                current_as = self.Ta["mood"]
                 
                 tmpVal = None
                 vDiff_P = None
@@ -1093,8 +1093,8 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                         tmpVal = -1.0
                 pad.setD(  round(tmpVal * 10.0) / 10.0 )
                  
-                self.AS = pad
-                AClabel = self.getACLabel(self.AS) 
+                self.Ta["mood"] = pad
+                AClabel = self.getACLabel(self.Ta["mood"]) 
                 self.AfE = AClabel
         pass
                  
@@ -1113,10 +1113,10 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         for acl in self.affectiveCategories.keys():
             matches = True
             if self.affectiveCategories[acl] != None:
-                if len(self.affectiveCategories[acl]) == len(self.AS):
-                    for i in range(len(self.AS)):
+                if len(self.affectiveCategories[acl]) == len(self.Ta["mood"]):
+                    for i in range(len(self.Ta["mood"])):
                         r = self.affectiveCategories[acl][i]
-                        matches = matches and self.AS[i] >= r.getMin() and self.AS[i] <= r.getMax()
+                        matches = matches and self.Ta["mood"][i] >= r.getMin() and self.Ta["mood"][i] <= r.getMax()
                 else:
                     try:
                         raise Exception("The number of components for the affective category " + acl + " must be the same as the number of the components for the affective state")
