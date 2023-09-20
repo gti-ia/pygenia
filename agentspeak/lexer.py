@@ -65,6 +65,7 @@ TokenInfo = collections.namedtuple("TokenInfo", "lexeme token loc")
 class TokenType(enum.Enum):
     __order__ = """
                 personality
+                others
                 space comment
                 paren_open paren_close
                 bracket_open bracket_close
@@ -82,6 +83,8 @@ class TokenType(enum.Enum):
                 """
 
     personality   = Token(r"personality__")
+
+    others        = Token(r"others__")
     
     space         = Token(r"\s+", space=True)
     comment       = Token(r"(//|#).*", comment=True)
