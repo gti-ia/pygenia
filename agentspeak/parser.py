@@ -32,6 +32,9 @@ from agentspeak import Trigger, GoalType, FormulaType, UnaryOp, BinaryOp
 class AstBaseVisitor(object):
     def visit_literal(self, ast_literal):
         pass
+    
+    def visit_prob(self, ast_prob):
+        pass
 
     def visit_list(self, ast_list):
         pass
@@ -99,6 +102,7 @@ class AstLiteral(AstNode):
         self.functor = None
         self.terms = []
         self.annotations = []
+        self.time_range = None
 
     def accept(self, visitor):      
         return visitor.visit_literal(self)
@@ -118,6 +122,33 @@ class AstLiteral(AstNode):
             builder.append(", ".join(str(term) for term in self.annotations))
             builder.append("]")
         return "".join(builder)
+
+
+class AstTimePointRange(AstNode):
+    def __init__(self):
+        super(AstTimePointRange, self).__init__()
+        self.functor = None
+        self.start_range = None
+        self.end_range = None
+
+    def accept(self, visitor):      
+        return visitor.visit_time_point_range(self)
+
+    def __str__(self):
+        return "%s - %s" % (self.start_range, self.end_range)
+
+
+class AstProb(AstNode):
+    def __init__(self):
+        super(AstProb, self).__init__()
+        self.functor = None
+        self.value_prob = None
+
+    def accept(self, visitor):      
+        return visitor.visit_prob(self)
+
+    def __str__(self):
+        return "%s" % (self.value_prob)
 
 
 class AstList(AstNode):
@@ -484,8 +515,13 @@ def parse_literal(tok, tokens, log):
     if tok.lexeme == "[":
         while True:
             tok = next(tokens)
-            tok, term = parse_term(tok, tokens, log)
-            literal.annotations.append(term)
+
+            if tok.lexeme == "prob__":
+                tok, prob = parse_prob(tok, tokens, log)
+
+            else:
+                tok, term = parse_term(tok, tokens, log)
+                literal.annotations.append(term)
 
             if tok.lexeme == "]":
                 tok = next(tokens)
@@ -495,9 +531,58 @@ def parse_literal(tok, tokens, log):
             else:
                 raise log.error("expected ']' or another annotation, got '%s'", tok.lexeme,
                                 loc=tok.loc, extra_locs=[literal.loc])
+            
+    if tok.lexeme == "<":
+        tok, time_range = parse_time_point_range(tok, tokens, log)
+        literal.time_range = time_range
+        
 
     return tok, literal
 
+
+def parse_time_point_range(tok, tokens, log):
+    time_range = AstTimePointRange()
+    time_range.functor = tok.lexeme
+    time_range.loc = tok.loc
+
+    tok = next(tokens)
+    tok, expr = parse_arith_expr(tok, tokens, log)
+    time_range.start_range = expr
+            
+    if tok.lexeme == ",":
+        tok = next(tokens)
+    else:
+        raise log.error("expected ',', got '%s'", tok.lexeme,
+                            loc=tok.loc, extra_locs=[time_range.loc])
+
+    tok, expr = parse_arith_expr(tok, tokens, log)
+    time_range.end_range = expr
+
+    if tok.lexeme == ">":
+        tok = next(tokens)
+    else:
+        raise log.error("expected '>', got '%s'", tok.lexeme,
+                            loc=tok.loc, extra_locs=[time_range.loc])
+    
+    return tok, time_range
+
+
+def parse_prob(tok, tokens, log):
+    prob = AstProb()
+    prob.functor = tok.lexeme
+    prob.loc = tok.loc
+
+    tok = next(tokens)
+
+    if tok.lexeme == ":":
+        tok = next(tokens)
+    else:
+        raise log.error("expected ':', got '%s'", tok.lexeme,
+                                loc=tok.loc, extra_locs=[prob.loc])
+    
+    tok, prob.value_prob = parse_arith_expr(tok, tokens, log)
+
+    return tok, prob
 
 def parse_list(tok, tokens, log):
     if tok.lexeme != "[":
