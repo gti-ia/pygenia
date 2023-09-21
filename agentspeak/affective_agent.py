@@ -876,13 +876,13 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         """
         
         # We add the new belief to the agent's belief base, so we can calculate the concern value
-        self.add_belief(event[0], agentspeak.runtime.Intention().scope)
+        #self.add_belief(event[0], agentspeak.runtime.Intention().scope)
         # We calculate the concern value
         concern_value = self.test_concern(concern.head, agentspeak.runtime.Intention(), concern)
         # We remove the belief from the agent's belief base again
-        self.remove_belief(event[0], agentspeak.runtime.Intention())
+        #self.remove_belief(event[0], agentspeak.runtime.Intention())
 
-        return concern_value 
+        return concern_value
         
         
         
@@ -900,11 +900,11 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         """
 
         # We remove the belief from the agent's belief base, so we can calculate the concern value
-        self.remove_belief(event[0], agentspeak.runtime.Intention())
+        #self.remove_belief(event[0], agentspeak.runtime.Intention())
         # We calculate the concern value
         concern_value = self.test_concern(concern.head, agentspeak.runtime.Intention(), concern)
         # We add the belief to the agent's belief base again
-        self.add_belief(event[0], agentspeak.runtime.Intention())
+        #self.add_belief(event[0], agentspeak.runtime.Intention())
         
         return concern_value 
         
