@@ -303,12 +303,14 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         
         # Temporal information of the affective cycle definition
         self.Ta = {"Ub": {"Ba": [], "Br": [], "st": None},
-                   "Av": {"desirability": None, "likelihood": None, "causal attribution": None, "controllability": None, "expectedness": None},
+                   "Av": {"desirability": None, "likelihood": None, "causal_attribution": None, "controllability": None, "expectedness": None},
                    "Cs": [],
                    "Ae": [],
                    "Ee": [],
                    "Fe": [],
-                   "mood": {"P":0,"A":0, "D":0},}
+                   "mood": PAD() }
+        
+        self.affective_categories = {}
                    
         self.event_queue = []
 
@@ -399,7 +401,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             # We recieve a belief and the affective cycle is activated.
             # We need to provide to the sunction the term and the Trigger type.
             self.event_queue.append((term, trigger))
-            self.appraisal((term, trigger),0)
+            #self.appraisal((term, trigger),0)
             if trigger == agentspeak.Trigger.addition:
                 self.add_belief(term, calling_intention.scope)
             else: 
@@ -686,8 +688,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             "SelCs" : self.applySelectCopingStrategy,
             "Cope" : self.applyCope
         }
-        
-        runingAffectiveCycle = True
 
         flag = True
         while flag == True and self.current_step in options:
@@ -874,7 +874,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         Returns:
             float: Concern value of the event.
         """
-        
+
         # We add the new belief to the agent's belief base, so we can calculate the concern value
         #self.add_belief(event[0], agentspeak.runtime.Intention().scope)
         # We calculate the concern value
@@ -1001,7 +1001,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         """
         This method is used to update the affective state.
         """
-        
         if self.eventProcessedInCycle:
             self.UpdateAS() 
         if self.isAffectRelevantEvent(self.currentEvent): 
@@ -1021,7 +1020,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         """
         result = currentEvent != None
         for ex in self.affRevEventThreshold: 
-            result = result and ex.evaluate(self.Ta["mood"]["P"], self.Ta["mood"]["A"], self.Ta["mood"]["D"])
+            result = result and ex.evaluate(self.Ta["mood"].getP(), self.Ta["mood"].getA(), self.Ta["mood"].getD())
         return result
     
     def UpdateAS(self):
@@ -1029,12 +1028,12 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         This method is used to update the affective state.
         """
         self.DISPLACEMENT = 0.5
-        
-        if isinstance(self.Ta["mood"], PAD): 
+        if isinstance(self.Ta["mood"], PAD):
             pad = PAD()
-            calculated_as = self.deriveASFromAppraisalVariables() 
+            calculated_as = self.deriveASFromAppraisalVariables()
+            
             if calculated_as != None:
-                 # PAD current_as = (PAD) getAS(); 
+                # PAD current_as = (PAD) getAS(); 
                 current_as = self.Ta["mood"]
                 
                 tmpVal = None
@@ -1094,7 +1093,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                 pad.setD(  round(tmpVal * 10.0) / 10.0 )
                  
                 self.Ta["mood"] = pad
-                AClabel = self.getACLabel(self.Ta["mood"]) 
+                AClabel = self.getACLabel()
                 self.AfE = AClabel
         pass
                  
@@ -1110,13 +1109,13 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         matches = True
         r = None
          
-        for acl in self.affectiveCategories.keys():
+        for acl in self.affective_categories.keys():
             matches = True
-            if self.affectiveCategories[acl] != None:
-                if len(self.affectiveCategories[acl]) == len(self.Ta["mood"]):
-                    for i in range(len(self.Ta["mood"])):
-                        r = self.affectiveCategories[acl][i]
-                        matches = matches and self.Ta["mood"][i] >= r.getMin() and self.Ta["mood"][i] <= r.getMax()
+            if self.affective_categories[acl] != None:
+                if len(self.affective_categories[acl]) == len(self.Ta["mood"].affectiveLabels):
+                    for i in range(len(self.Ta["mood"].affectiveLabels)):
+                        r = self.affective_categories[acl][i]
+                        matches = matches and self.Ta["mood"].components[i] >= r[0] and self.Ta["mood"].components[i] <= r[1]
                 else:
                     try:
                         raise Exception("The number of components for the affective category " + acl + " must be the same as the number of the components for the affective state")
@@ -1214,7 +1213,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             "CtlInt": self.applyCtlInt,
             "ExecInt": self.applyExecInt
         }
-        
+
         if self.current_step == "SelInt":
             if not options[self.current_step]():
                 return False
@@ -1313,15 +1312,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             if not agentspeak.unify(self.intention_selected.calling_term, frozen, calling_intention.scope, calling_intention.stack):
                 raise RuntimeError("back unification failed")
         return True
-    
-    def run(self) -> None:
-        """
-        This method is used to run the step cycle of the agent
-        We run the second part of the reasoning cycle until the agent has no intentions
-        """
-        self.current_step = "SelInt"
-        while self.step():
-            pass
 
     def waiters(self) -> Iterator[agentspeak.runtime.Waiter]    :
         """
@@ -1332,6 +1322,24 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         """
         return (intention[-1].waiter for intention in self.C["I"]
                 if intention and intention[-1].waiter)
+    
+    def run(self) -> None:
+        """
+        This method is used to run a cycle of the agent
+        """
+
+        # Affective cycle
+        self.current_step = "Appr"
+        self.affectiveTransitionSystem()
+
+        # Rational cycle
+        if "E" in self.C:
+            for i in range(len(self.C["E"])):
+                self.current_step = "SelEv"
+                self.applySemanticRuleDeliberate()
+        
+        self.current_step = "SelInt"
+        return self.step()
 
 
 class Environment(agentspeak.runtime.Environment):
@@ -1426,7 +1434,7 @@ class Environment(agentspeak.runtime.Environment):
             
 
         # Trying different ways to multiprocess the cycles of the agents
-        multiprocesing = "asyncio2" # threading, asyncio, concurrent.futures, NO
+        ''' multiprocesing = "asyncio2" # threading, asyncio, concurrent.futures, NO
             
         if multiprocesing == "asyncio2":
             import asyncio
@@ -1443,6 +1451,7 @@ class Environment(agentspeak.runtime.Environment):
                     event.set()
 
                 async def rational():
+                    
                     # This function will wait for the event to be set before continuing its execution
                     if "E" in agent.C:
                         for i in range(len(agent.C["E"])):
@@ -1466,7 +1475,7 @@ class Environment(agentspeak.runtime.Environment):
         else: 
             if "E" in agent.C:
                 for i in range(len(agent.C["E"])):   
-                    agent.applySemanticRuleDeliberate()
+                    agent.applySemanticRuleDeliberate()'''
 
         # Report errors.
         log.throw()
@@ -1492,6 +1501,7 @@ class Environment(agentspeak.runtime.Environment):
                 if wait_until:
                     time.sleep(wait_until - self.time())
                     more_work = True
+    
     def run(self):
         """ 
         This method is used to run the environment
@@ -1501,9 +1511,7 @@ class Environment(agentspeak.runtime.Environment):
         while maybe_more_work:
             maybe_more_work = False
             for agent in self.agents.values():
-                # Start the second part of the reasoning cycle.
-                agent.current_step = "SelInt"
-                if agent.step():
+                if agent.run():
                     maybe_more_work = True
             if not maybe_more_work:
                 deadlines = (agent.shortest_deadline() for agent in self.agents.values())
@@ -1714,12 +1722,12 @@ class PAD(AffectiveState):
         arousal = 1
         dominance = 2
         
-    def __init__(self, P=None, A=None, D=None):
+    def __init__(self, p=None, a=None, d=None):
         super().__init__()
-        if (P is not None) and (A is not None) and (D is not None):
-            self.setP(P)
-            self.setA(A)
-            self.setD(D)
+        if (p is not None) and (a is not None) and (d is not None):
+            self.setP(p)
+            self.setA(a)
+            self.setD(d)
             
     def setAffectiveLabels(self):
         """
@@ -1784,19 +1792,19 @@ class PAD(AffectiveState):
     def getP(self):
         return self.components[self.PADlabels.pleassure.value]
      
-    def setP(self, P):
-        self.components[self.PADlabels.pleassure.value] = P
+    def setP(self, p):
+        self.components[self.PADlabels.pleassure.value] = p
          
     def getA(self):
         return self.components[self.PADlabels.arousal.value]
     
-    def setA(self, A):
-        self.components[self.PADlabels.arousal.value] = A
+    def setA(self, a):
+        self.components[self.PADlabels.arousal.value] = a
         
     def getD(self):
         return self.components[self.PADlabels.dominance.value]
      
-    def setD(self, D):
-        self.components[self.PADlabels.dominance.value] = D
+    def setD(self, d):
+        self.components[self.PADlabels.dominance.value] = d
         
         

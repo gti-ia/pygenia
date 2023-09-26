@@ -638,7 +638,6 @@ class Agent:
         term = agentspeak.evaluate(term, intention.scope)
 
         try:
-            print(term)
             group = term.literal_group()
         except AttributeError:
             raise AslError("expected belief literal, got: '%s'" % term)
