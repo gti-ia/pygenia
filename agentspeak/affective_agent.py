@@ -690,8 +690,8 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         }
 
         flag = True
-        while flag == True and self.current_step in options:
-            flag = options[self.current_step]()
+        while flag == True and self.current_step_ast in options:
+            flag = options[self.current_step_ast]()
 
         return True
     
@@ -934,7 +934,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             self.Mem = [] 
         
         # The next step is Update Aff State
-        self.current_step = "UpAs"
+        self.current_step_ast = "UpAs"
         return True
     
     def applyCope(self):
@@ -945,7 +945,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         SelectingCs = True
         while SelectingCs and self.C["CS"]:
             SelectingCs = self.cope()
-        #self.current_step = "Appr"
+        #self.current_step_ast = "Appr"
         return False
     
     def cope(self):
@@ -973,7 +973,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         """
         self.C["CS"] = []
         #self.selectCs() 
-        self.current_step = "Cope"
+        self.current_step_ast = "Cope"
         return True
     
     def selectCs(self):
@@ -1005,7 +1005,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             self.UpdateAS() 
         if self.isAffectRelevantEvent(self.currentEvent): 
             self.Mem.append(self.currentEvent)
-        self.current_step = "SelCs"
+        self.current_step_ast = "SelCs"
         return True
     
     def isAffectRelevantEvent(self, currentEvent):
@@ -1323,23 +1323,57 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         return (intention[-1].waiter for intention in self.C["I"]
                 if intention and intention[-1].waiter)
     
-    def run(self) -> None:
+    def run(self, affective_turns=1, rational_turns=1) -> None:
         """
         This method is used to run a cycle of the agent
         """
+        async def main():
 
-        # Affective cycle
-        self.current_step = "Appr"
-        self.affectiveTransitionSystem()
+            def release_sem(sem, turns, flag):
+                if flag:
+                    for i in range(turns):
+                        sem.release()
 
-        # Rational cycle
-        if "E" in self.C:
-            for i in range(len(self.C["E"])):
-                self.current_step = "SelEv"
-                self.applySemanticRuleDeliberate()
-        
-        self.current_step = "SelInt"
-        return self.step()
+            # Affective cycle
+            async def affective():
+                while not end_event.is_set():
+                    await sem_affective.acquire()
+                    self.current_step_ast = "Appr"
+                    self.affectiveTransitionSystem()
+                    release_sem(sem_rational, rational_turns, sem_affective.locked())
+                        
+            # Rational cycle
+            async def rational():
+                while not end_event.is_set():
+                    await sem_rational.acquire()
+                    if "E" in self.C:
+                        for i in range(len(self.C["E"])):
+                            self.current_step = "SelEv"
+                            self.applySemanticRuleDeliberate()
+                            
+                    self.current_step = "SelInt"
+                    if not self.step():
+                        end_event.set()
+                    
+                    release_sem(sem_affective, affective_turns, sem_rational.locked())
+                        
+            # Create the semaphores that will be used to synchronize the two functions
+            sem_affective = asyncio.Semaphore(affective_turns)
+            sem_rational = asyncio.Semaphore(0)
+
+            # Create an event to finish the processes
+            end_event = asyncio.Event()
+            
+            # Create the two tasks that will run the functions
+            task1 = asyncio.create_task(affective())
+            task2 = asyncio.create_task(rational())
+
+            # Wait for both tasks to complete
+            await asyncio.gather(task1, task2)
+
+        asyncio.run(main())
+
+        return False
 
 
 class Environment(agentspeak.runtime.Environment):
@@ -1430,52 +1464,6 @@ class Environment(agentspeak.runtime.Environment):
             concern = Concern(head, consequence)
             agent.add_concern(concern)
             concern_value = agent.test_concern(head, agentspeak.runtime.Intention(), concern)
-            
-            
-
-        # Trying different ways to multiprocess the cycles of the agents
-        ''' multiprocesing = "asyncio2" # threading, asyncio, concurrent.futures, NO
-            
-        if multiprocesing == "asyncio2":
-            import asyncio
-
-            async def main():
-                async def affective():
-                    # This function will just sleep for 3 seconds and then set an event
-                    
-                    await asyncio.sleep(1)
-                    agent.current_step = "Appr"
-                    agent.affectiveTransitionSystem()
-                    await asyncio.sleep(1)
-                    
-                    event.set()
-
-                async def rational():
-                    
-                    # This function will wait for the event to be set before continuing its execution
-                    if "E" in agent.C:
-                        for i in range(len(agent.C["E"])):
-                            agent.current_step = "SelEv"
-                            agent.applySemanticRuleDeliberate()
-                    await event.wait()
-
-                # Create the event that will be used to synchronize the two functions
-                event = asyncio.Event()
-
-                # Create the two tasks that will run the functions
-                task1 = asyncio.create_task(affective())
-                task2 = asyncio.create_task(rational())
-
-                # Wait for both tasks to complete
-                await asyncio.gather(task1, task2)
-
-            # Call the main() function using asyncio.run()
-            asyncio.run(main())
-            
-        else: 
-            if "E" in agent.C:
-                for i in range(len(agent.C["E"])):   
-                    agent.applySemanticRuleDeliberate()'''
 
         # Report errors.
         log.throw()
