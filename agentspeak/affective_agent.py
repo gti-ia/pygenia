@@ -310,7 +310,10 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                    "Fe": [],
                    "mood": PAD() }
         
-        self.affective_categories = {}
+        #This is an example of the use of affective categories:
+        self.affective_categories = { "neutral": [[-0.3, 0.3], [-0.3, 0.3], [-1, 1],],
+                                      "happy": [[0, 1], [0, 1], [-1, 1]],
+                                      "sad": [[-1, 0], [-1, 0], [-1, 1]]}
                    
         self.event_queue = []
 
@@ -565,6 +568,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         - If the plans were found, the dictionary T["R"] will be filled with the plans found and the current step will be changed to "AppPl"
         - If not plans were found, the current step will be changed to "SelEv" to select a new event
         """
+        
         RelPlan = collections.defaultdict(lambda: [])
         plans = self.plans.values()
         for plan in plans:
@@ -579,6 +583,21 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         self.current_step = "AppPl"
         return True
     
+    def check_affect(self, plan):
+        # Return True if the plan has no annotation
+        if plan.annotation is None:
+            return True
+        else:
+            # Returns false if the plan has a required affect and does not match the agent's current affect.
+            for a in plan.annotation.annotations:
+                if a.functor == "affect__":
+                    for t in a.terms:
+                        if str(t) not in self.AfE:
+                            return False
+            
+            # Returns True if required affect matchs the agent's current affect.
+            return True
+        
     def applyAppPl(self) -> bool:
         """
         This method is used to find the plans that are applicable to the current goal.
@@ -588,11 +607,18 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         Returns:
             bool: True if the plans were found, False otherwise
         
-        - If the plans were found, the dictionary T["Ap"] will be filled with the plans found and the current step will be changed to "SelAppl"
-        - If not plans were found, return False
+        - The dictionary T["Ap"] will be filled with:
+            + The plans that do not require a specific affective state
+            + The plans whose required affective state matches that of the agent
+        - The current step will be changed to "SelAppl"
+        - If not applicable plans were found, return False
         """
-        self.T["Ap"] = self.T["R"][(self.T["e"].trigger, self.T["e"].goal_type, self.frozen.functor, len(self.frozen.args))] 
+        plans_list = self.T["R"][(self.T["e"].trigger, self.T["e"].goal_type, self.frozen.functor, len(self.frozen.args))]
+
+        self.T["Ap"] = [plan for plan in plans_list if self.check_affect(plan)]
+
         self.current_step = "SelAppl"
+
         return self.T["Ap"] != []
     
     def applySelAppl(self) -> bool:
@@ -1432,11 +1458,13 @@ class Environment(agentspeak.runtime.Environment):
             str_body = str(ast_plan.body)
 
             plan = agentspeak.runtime.Plan(ast_plan.event.trigger, ast_plan.event.goal_type, head, context, body, ast_plan.body, ast_plan.annotations)
+        
             if ast_plan.args[0] is not None:
                 plan.args[0] = ast_plan.args[0]
 
             if ast_plan.args[1] is not None:
                 plan.args[1] = ast_plan.args[1]
+
             agent.add_plan(plan)
             
         # Add beliefs to agent prototype.

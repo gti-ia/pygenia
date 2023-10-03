@@ -270,8 +270,8 @@ class AstBinaryOp(AstNode):
 class AstPlan(AstNode):
     def __init__(self):
         super(AstPlan, self).__init__()
-        self.annotations = []
-        self.dicts_annotations = None 
+        self.annotations = None
+        self.dict_annotations = None 
         self.event = None
         self.context = None
         self.body = None
@@ -286,9 +286,9 @@ class AstPlan(AstNode):
     def __str__(self):
         builder = []
 
-        for annotation in self.annotations:
+        if self.annotations is not None:
             builder.append("@")
-            builder.append(str(annotation))
+            builder.append(str(self.annotation))
             builder.append("\n")
 
         builder.append(str(self.event))
@@ -1207,12 +1207,12 @@ def parse_event(tok, tokens, log):
 
 def parse_plan(tok, tokens, log):
     plan = AstPlan()
-    while tok.lexeme == "@":
+    if tok.lexeme == "@":
         tok = next(tokens)
         
         tok, annotation = parse_literal(tok, tokens, log)
-        plan.annotations.append(annotation)
-        dict_annotations = {annotation.functor: { annotation.annotations[i].functor: [str(annotation.annotations[i].terms[j]) for j in range(len(annotation.annotations[i].terms))] for i in range(len(annotation.annotations))}}
+        plan.annotations = annotation
+        plan.dict_annotations = {annotation.functor: { annotation.annotations[i].functor: [str(annotation.annotations[i].terms[j]) for j in range(len(annotation.annotations[i].terms))] for i in range(len(annotation.annotations))}}
       
     tok, event = parse_event(tok, tokens, log)
     plan.event = event
@@ -1739,7 +1739,9 @@ class ConstFoldVisitor(object):
         return ast_event
 
     def visit_plan(self, ast_plan):
-        ast_plan.annotations = [annotation.accept(TermFoldVisitor(self.log)) for annotation in ast_plan.annotations]
+        if ast_plan.annotations is not None:
+            ast_plan.annotations = ast_plan.annotations.accept(TermFoldVisitor(self.log))
+
         ast_plan.event = ast_plan.event.accept(self)
         ast_plan.context = ast_plan.context.accept(LogicalFoldVisitor(self.log)) if ast_plan.context else None
         ast_plan.body = ast_plan.body.accept(self) if ast_plan.body else None
@@ -1811,9 +1813,9 @@ def validate(ast_agent, log):
         for op in plan.event.head.accept(FindOpVisitor()):
             log.error("plan head is supposed to be unifiable, but contains non-const expression", loc=op.loc, extra_locs=[plan.loc])
 
-        for annotation in plan.annotations:
+        #for annotation in plan.annotations:
             # Warning annotations ignored
-            log.warning("plan annotations are ignored as of yet", loc=annotation.loc, extra_locs=[plan.loc])
+            #log.warning("plan annotations are ignored as of yet", loc=annotation.loc, extra_locs=[plan.loc])
 
         if plan.event.goal_type != GoalType.belief and plan.event.trigger == Trigger.removal:
             log.warning("recovery plans are ignored as of yet", loc=plan.loc)
