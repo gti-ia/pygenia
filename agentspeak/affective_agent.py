@@ -588,15 +588,15 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         if plan.annotation is None:
             return True
         else:
-            # Returns false if the plan has a required affect and does not match the agent's current affect.
+            # Returns True if the plan has required affect states and the agent's current affect state match any of them
             for a in plan.annotation.annotations:
                 if a.functor == "affect__":
                     for t in a.terms:
-                        if str(t) not in self.AfE:
-                            return False
+                        if str(t) in self.AfE:
+                            return True
             
-            # Returns True if required affect matchs the agent's current affect.
-            return True
+            # Returns False if the agent's current affect does not match any of the required affect states
+            return False
         
     def applyAppPl(self) -> bool:
         """

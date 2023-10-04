@@ -1,23 +1,25 @@
-concern__ (X) :- tiempo(nublado) & X=0.5 | tiempo(soleado) & X=1 .
+concern__ (X) :- weather(cloudy) & X=0.5 | weather(sunny) & X=1 .
 
 !start.
 
 +!start
 <-
-+tiempo(soleado);
++weather(sunny);
 !express_emotion;
--tiempo(soleado);
-+tiempo(nublado);
+-weather(sunny);
++weather(cloudy);
 !express_emotion.
 
-+tiempo(X)
++weather(X)
 <-
-.print("El tiempo esta", X).
+.print("The weather is ", X).
 
 +!express_emotion
 <-
 !happy_emotion;
-!sad_emotion.
+!sad_emotion;
+!angry_emotion;
+!help.
 
 @p1[affect__(happy)]
 +!happy_emotion
@@ -28,3 +30,13 @@ concern__ (X) :- tiempo(nublado) & X=0.5 | tiempo(soleado) & X=1 .
 +!sad_emotion
 <-
 .print("Too bad. I am sad").
+
+@p3[affect__(angry)]
++!angry_emotion
+<-
+.print("I'm getting angry").
+
+@p4[affect__(sad, angry)]
++!help
+<-
+.print("Sorry, can you help me?").
