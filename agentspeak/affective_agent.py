@@ -19,8 +19,8 @@ import math
 import agentspeak
 import agentspeak.runtime
 import agentspeak.stdlib
-import agentspeak.parser
-import agentspeak.lexer
+import pygenia.parser
+import pygenia.lexer
 import agentspeak.util
 
 from agentspeak import UnaryOp, BinaryOp, AslError, asl_str
@@ -1499,6 +1499,15 @@ class Environment(agentspeak.runtime.Environment):
         self.agents[agent.name] = agent
         return ast_agent, agent
     
+    def _build_agent(self, source, actions, agent_cls=agentspeak.runtime.Agent, name=None):
+        # Parse source.
+        log = agentspeak.Log(LOGGER, 3)
+        tokens = pygenia.lexer.TokenStream(source, log)
+        ast_agent = pygenia.parser.parse(source.name, tokens, log)
+        log.throw()
+
+        return self.build_agent_from_ast(source, ast_agent, actions, agent_cls, name)        
+
     def run_agent(self, agent: AffectiveAgent):
         """
         This method is used to run the agent

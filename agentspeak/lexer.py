@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 #
-# This file is part of the python-agentspeak interpreter.
-# Copyright (C) 2016-2019 Niklas Fiekas <niklas.fiekas@tu-clausthal.de>.
+# This file is part of the pygenia interpreter that extens the 
+# python-agentspeak interpreter (Copyright (C) 2016-2019 Niklas 
+# Fiekas <niklas.fiekas@tu-clausthal.de>.)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

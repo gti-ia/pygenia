@@ -23,7 +23,7 @@ import errno
 import os.path
 
 import agentspeak
-import agentspeak.lexer
+import pygenia.lexer
 import agentspeak.util
 
 from agentspeak import Trigger, GoalType, FormulaType, UnaryOp, BinaryOp
