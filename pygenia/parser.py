@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 #
-# This file is part of the python-agentspeak interpreter.
-# Copyright (C) 2016-2019 Niklas Fiekas <niklas.fiekas@tu-clausthal.de>.
+# This file is part of the pygenia interpreter that extends the
+# python-agentspeak interpreter (Copyright (C) 2016-2019 Niklas
+# Fiekas <niklas.fiekas@tu-clausthal.de>.)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,21 +19,20 @@
 
 from __future__ import print_function
 
-import sys
 import errno
 import os.path
+import sys
 
 import agentspeak
-import pygenia.lexer
 import agentspeak.util
-
 from agentspeak import Trigger, GoalType, FormulaType, UnaryOp, BinaryOp
+from agentspeak.parser import AstNode, AstList
 
 
 class AstBaseVisitor(object):
     def visit_literal(self, ast_literal):
         pass
-    
+
     def visit_prob(self, ast_prob):
         pass
 
@@ -44,7 +44,7 @@ class AstBaseVisitor(object):
 
     def visit_rule(self, ast_rule):
         pass
-    
+
     def visit_concern(self, ast_concern):
         pass
 
@@ -91,9 +91,7 @@ class AstBaseVisitor(object):
         pass
 
 
-class AstNode(object):
-    def __init__(self):
-        self.loc = None
+
 
 
 class AstLiteral(AstNode):
@@ -104,7 +102,7 @@ class AstLiteral(AstNode):
         self.annotations = []
         self.time_range = None
 
-    def accept(self, visitor):      
+    def accept(self, visitor):
         return visitor.visit_literal(self)
 
     def signature(self):
@@ -131,7 +129,7 @@ class AstTimePointRange(AstNode):
         self.start_range = None
         self.end_range = None
 
-    def accept(self, visitor):      
+    def accept(self, visitor):
         return visitor.visit_time_point_range(self)
 
     def __str__(self):
@@ -144,23 +142,13 @@ class AstProb(AstNode):
         self.functor = None
         self.value_prob = None
 
-    def accept(self, visitor):      
+    def accept(self, visitor):
         return visitor.visit_prob(self)
 
     def __str__(self):
         return "%s" % (self.value_prob)
 
 
-class AstList(AstNode):
-    def __init__(self):
-        super(AstList, self).__init__()
-        self.terms = []
-
-    def accept(self, visitor):
-        return visitor.visit_list(self)
-
-    def __str__(self):
-        return "[%s]" % (", ".join(str(term) for term in self.terms), )
 
 
 class AstLinkedList(AstNode):
@@ -198,7 +186,7 @@ class AstGoal(AstNode):
         return visitor.visit_goal(self)
 
     def __str__(self):
-        return "!%s" % (self.atom, )
+        return "!%s" % (self.atom,)
 
 
 class AstFormula(AstNode):
@@ -271,11 +259,11 @@ class AstPlan(AstNode):
     def __init__(self):
         super(AstPlan, self).__init__()
         self.annotations = None
-        self.dict_annotations = None 
+        self.dict_annotations = None
         self.event = None
         self.context = None
         self.body = None
-        self.args = [None,None]
+        self.args = [None, None]
 
     def accept(self, visitor):
         return visitor.visit_plan(self)
@@ -464,7 +452,6 @@ class AstAgent(AstNode):
 
 
 def parse_tkconcern(tok, tokens, log):
-
     literal = AstLiteral()
     literal.functor = tok.lexeme
     literal.loc = tok.loc
@@ -487,8 +474,8 @@ def parse_tkconcern(tok, tokens, log):
 
     return tok, literal
 
-def parse_literal(tok, tokens, log):
 
+def parse_literal(tok, tokens, log):
     if not tok.token.functor:
         raise log.error("expected functor, got '%s'", tok.lexeme, loc=tok.loc)
 
@@ -531,11 +518,10 @@ def parse_literal(tok, tokens, log):
             else:
                 raise log.error("expected ']' or another annotation, got '%s'", tok.lexeme,
                                 loc=tok.loc, extra_locs=[literal.loc])
-            
+
     if tok.lexeme == "<":
         tok, time_range = parse_time_point_range(tok, tokens, log)
         literal.time_range = time_range
-        
 
     return tok, literal
 
@@ -548,12 +534,12 @@ def parse_time_point_range(tok, tokens, log):
     tok = next(tokens)
     tok, expr = parse_arith_expr(tok, tokens, log)
     time_range.start_range = expr
-            
+
     if tok.lexeme == ",":
         tok = next(tokens)
     else:
         raise log.error("expected ',', got '%s'", tok.lexeme,
-                            loc=tok.loc, extra_locs=[time_range.loc])
+                        loc=tok.loc, extra_locs=[time_range.loc])
 
     tok, expr = parse_arith_expr(tok, tokens, log)
     time_range.end_range = expr
@@ -562,8 +548,8 @@ def parse_time_point_range(tok, tokens, log):
         tok = next(tokens)
     else:
         raise log.error("expected '>', got '%s'", tok.lexeme,
-                            loc=tok.loc, extra_locs=[time_range.loc])
-    
+                        loc=tok.loc, extra_locs=[time_range.loc])
+
     return tok, time_range
 
 
@@ -578,11 +564,12 @@ def parse_prob(tok, tokens, log):
         tok = next(tokens)
     else:
         raise log.error("expected ':', got '%s'", tok.lexeme,
-                                loc=tok.loc, extra_locs=[prob.loc])
-    
+                        loc=tok.loc, extra_locs=[prob.loc])
+
     tok, prob.value_prob = parse_arith_expr(tok, tokens, log)
 
     return tok, prob
+
 
 def parse_list(tok, tokens, log):
     if tok.lexeme != "[":
@@ -674,7 +661,6 @@ def parse_atom(tok, tokens, log):
 
 def parse_power(tok, tokens, log):
     tok, expr = parse_atom(tok, tokens, log)
-    
 
     while tok.lexeme == "**":
         op = AstBinaryOp()
@@ -780,7 +766,7 @@ def parse_and_expr(tok, tokens, log):
     return tok, expr
 
 
-def parse_term(tok, tokens, log):  
+def parse_term(tok, tokens, log):
     tok, expr = parse_and_expr(tok, tokens, log)
     while tok.lexeme == "|":
         bin_op = AstBinaryOp()
@@ -796,7 +782,6 @@ def parse_term(tok, tokens, log):
 
 
 def parse_rule_or_belief(tok, tokens, log):
-    
     if "." in tok.lexeme:
         log.warning("found '.' in assertion. should this have been an action?", loc=tok.loc)
 
@@ -815,8 +800,8 @@ def parse_rule_or_belief(tok, tokens, log):
         # Just the belief atom.
         return tok, belief_atom
 
+
 def parse_concern(tok, tokens, log):
-    
     if "." in tok.lexeme:
         log.warning("found '.' in assertion. should this have been an action?", loc=tok.loc)
 
@@ -834,22 +819,22 @@ def parse_concern(tok, tokens, log):
     else:
         # Just the belief atom.
         return tok, belief_atom
-    
+
+
 def parse_personality(tok, tokens, log):
-    
     personality = AstPersonality()
     personality.loc = tok.loc
 
     tok = next(tokens)
-    
+
     if tok.lexeme == ":":
         tok = next(tokens)
     else:
-         raise log.error("expected :, got '%s'", tok.lexeme, loc=tok.loc)
-    
+        raise log.error("expected :, got '%s'", tok.lexeme, loc=tok.loc)
+
     if tok.lexeme != "{":
         raise log.error("expected {, got '%s'", tok.lexeme, loc=tok.loc)
-    
+
     personality.traits = parse_personality_traits_array(tok, tokens, log)
 
     tok = next(tokens)
@@ -862,14 +847,15 @@ def parse_personality(tok, tokens, log):
             tok = next(tokens)
         except:
             raise log.error("expected a number value, got '%s'", tok.lexeme, loc=tok.loc)
-    
+
     if tok.lexeme != "}":
         raise log.error("expected }, got '%s'", tok.lexeme, loc=tok.loc)
-    
+
     tok = next(tokens)
 
     return tok, personality
-    
+
+
 def parse_personality_traits_array(tok, tokens, log):
     traits = {}
 
@@ -887,23 +873,22 @@ def parse_personality_traits_array(tok, tokens, log):
 
     return traits
 
-    
+
 def parse_personality_trait(tok, tokens, log):
-    
     trait = tok.lexeme
     tok = next(tokens)
 
     if tok.lexeme != ":":
         raise log.error("expected :, got '%s'", tok.lexeme, loc=tok.loc)
-    
+
     tok = next(tokens)
 
     try:
         value = float(tok.lexeme)
     except:
-        raise log.error("expected a float value for the personality trait '%s', got '%s'", trait, tok.lexeme, loc=tok.loc)
+        raise log.error("expected a float value for the personality trait '%s', got '%s'", trait, tok.lexeme,
+                        loc=tok.loc)
 
-    
     tok = next(tokens)
 
     return tok, trait, value
@@ -914,22 +899,22 @@ def parse_others(tok, tokens, log):
     others.loc = tok.loc
 
     tok = next(tokens)
-    
+
     if tok.lexeme == ":":
         tok = next(tokens)
     else:
-         raise log.error("expected :, got '%s'", tok.lexeme, loc=tok.loc)
-    
+        raise log.error("expected :, got '%s'", tok.lexeme, loc=tok.loc)
+
     if tok.lexeme == "{":
         tok = next(tokens)
     else:
         raise log.error("expected {, got '%s'", tok.lexeme, loc=tok.loc)
 
     tok, others.other_agents = parse_others_array(tok, tokens, log)
-    
+
     if tok.lexeme != "}":
         raise log.error("expected }, got '%s'", tok.lexeme, loc=tok.loc)
-    
+
     tok = next(tokens)
 
     return tok, others
@@ -964,7 +949,7 @@ def parse_other_agent(tok, tokens, log):
         tok = next(tokens)
     else:
         raise log.error("expected :, got '%s'", tok.lexeme, loc=tok.loc)
-    
+
     if tok.lexeme == "[":
         tok = next(tokens)
     else:
@@ -987,17 +972,16 @@ def parse_other_agent_information(tok, tokens, log):
             tok = next(tokens)
         else:
             raise log.error("expected :, got '%s'", tok.lexeme, loc=tok.loc)
-        
+
         tok, value = parse_arith_expr(tok, tokens, log)
 
         agent_information[type_information] = value
-        
+
         if tok.lexeme == ",":
             tok = next(tokens)
 
     tok = next(tokens)
     return tok, agent_information
-
 
 
 def parse_initial_goal(tok, tokens, log):
@@ -1028,7 +1012,8 @@ def parse_body(tok, tokens, log):
         elif tok.lexeme == "}":
             break
         elif isinstance(formula, AstFormula):
-            raise log.error("expected ';' or '}' after formula, got '%s'", tok.lexeme, loc=tok.loc, extra_locs=[formula.loc])
+            raise log.error("expected ';' or '}' after formula, got '%s'", tok.lexeme, loc=tok.loc,
+                            extra_locs=[formula.loc])
         else:
             # Block in brackets has ended.
             pass
@@ -1051,7 +1036,8 @@ def parse_while(tok, tokens, log):
     tok, while_node.condition = parse_term(tok, tokens, log)
 
     if tok.lexeme != ")":
-        raise log.error("expected ')' after while condition, got '%s'", tok.lexeme, loc=tok.loc, extra_locs=[while_node.loc, while_node.condition.loc])
+        raise log.error("expected ')' after while condition, got '%s'", tok.lexeme, loc=tok.loc,
+                        extra_locs=[while_node.loc, while_node.condition.loc])
     tok = next(tokens)
 
     if tok.lexeme != "{":
@@ -1082,7 +1068,8 @@ def parse_for(tok, tokens, log):
     tok, for_node.generator = parse_term(tok, tokens, log)
 
     if tok.lexeme != ")":
-        raise log.error("expected ')' after for generator, got '%s'", tok.lexeme, loc=tok.loc, extra_locs=[for_node.loc, for_node.generator.loc])
+        raise log.error("expected ')' after for generator, got '%s'", tok.lexeme, loc=tok.loc,
+                        extra_locs=[for_node.loc, for_node.generator.loc])
     tok = next(tokens)
 
     if tok.lexeme != "{":
@@ -1113,7 +1100,8 @@ def parse_if_then_else(tok, tokens, log):
     tok, if_then_else.condition = parse_term(tok, tokens, log)
 
     if tok.lexeme != ")":
-        raise log.error("expected ')' after if condition, got '%s'", tok.lexeme, loc=tok.loc, extra_locs=[if_then_else.loc, if_then_else.condition.loc])
+        raise log.error("expected ')' after if condition, got '%s'", tok.lexeme, loc=tok.loc,
+                        extra_locs=[if_then_else.loc, if_then_else.condition.loc])
     tok = next(tokens)
 
     if tok.lexeme != "{":
@@ -1131,13 +1119,15 @@ def parse_if_then_else(tok, tokens, log):
         tok = next(tokens)
 
         if tok.lexeme != "{":
-            raise log.error("expected '{' after else, got '%s'", tok.lexeme, loc=tok.loc, extra_locs=[if_then_else.loc, tok_else.loc])
+            raise log.error("expected '{' after else, got '%s'", tok.lexeme, loc=tok.loc,
+                            extra_locs=[if_then_else.loc, tok_else.loc])
         tok = next(tokens)
 
         tok, if_then_else.else_body = parse_body(tok, tokens, log)
 
         if tok.lexeme != "}":
-            raise log.error("expected '}' after else body, got '%s'", tok.lexeme, loc=tok.loc, extra_locs=[if_then_else.loc, tok_else.loc])
+            raise log.error("expected '}' after else body, got '%s'", tok.lexeme, loc=tok.loc,
+                            extra_locs=[if_then_else.loc, tok_else.loc])
         tok = next(tokens)
 
     return tok, if_then_else
@@ -1177,7 +1167,8 @@ def parse_plan_body(tok, tokens, log):
         elif tok.lexeme == ".":
             break
         elif isinstance(formula, AstFormula):
-            raise log.error("expected ';' or '.' after formula, got '%s'", tok.lexeme, loc=tok.loc, extra_locs=[formula.loc])
+            raise log.error("expected ';' or '.' after formula, got '%s'", tok.lexeme, loc=tok.loc,
+                            extra_locs=[formula.loc])
         else:
             # Block in brackets has ended.
             pass
@@ -1204,16 +1195,18 @@ def parse_event(tok, tokens, log):
     return tok, event
 
 
-
 def parse_plan(tok, tokens, log):
     plan = AstPlan()
     if tok.lexeme == "@":
         tok = next(tokens)
-        
+
         tok, annotation = parse_literal(tok, tokens, log)
         plan.annotations = annotation
-        plan.dict_annotations = {annotation.functor: { annotation.annotations[i].functor: [str(annotation.annotations[i].terms[j]) for j in range(len(annotation.annotations[i].terms))] for i in range(len(annotation.annotations))}}
-      
+        plan.dict_annotations = {annotation.functor: {
+            annotation.annotations[i].functor: [str(annotation.annotations[i].terms[j]) for j in
+                                                range(len(annotation.annotations[i].terms))] for i in
+            range(len(annotation.annotations))}}
+
     tok, event = parse_event(tok, tokens, log)
     plan.event = event
     plan.loc = event.loc
@@ -1226,7 +1219,6 @@ def parse_plan(tok, tokens, log):
     if "[" in str(event):
         plan.args[1] = str(event).split("[")[1].split("]")[0]
 
-
     if tok.lexeme == ":":
         tok = next(tokens)
         tok, plan.context = parse_term(tok, tokens, log)
@@ -1236,11 +1228,10 @@ def parse_plan(tok, tokens, log):
         tok = next(tokens)
         tok, plan.body = parse_plan_body(tok, tokens, log)
         plan.body.loc = body_loc
-        
 
     return tok, plan
-   
-                    
+
+
 class AstConcern(AstNode):
     def __init__(self):
         super(AstConcern, self).__init__()
@@ -1252,7 +1243,8 @@ class AstConcern(AstNode):
 
     def __str__(self):
         return "%s :- %s" % (self.head, self.consequence)
-    
+
+
 class AstPersonality(AstNode):
     def __init__(self):
         super(AstPersonality, self).__init__()
@@ -1264,7 +1256,7 @@ class AstPersonality(AstNode):
 
     def __str__(self):
         return "%s :- %s, %s" % ("personality", self.traits, self.rationality_level)
-    
+
 
 class AstOthers(AstNode):
     def __init__(self):
@@ -1281,7 +1273,7 @@ class AstOthers(AstNode):
             builder.append(", ".join(str(f'{agent.name}: {agent}') for agent in self.other_agents))
             builder.append("]")
         return "".join(builder)
-    
+
 
 class AstOtherAgent(AstNode):
     def __init__(self):
@@ -1299,8 +1291,8 @@ class AstOtherAgent(AstNode):
             builder.append(", ".join(str(f'{info}: {self.information[info]}') for info in self.information))
             builder.append("]")
         return "".join(builder)
-    
-    
+
+
 def parse_agent(filename, tokens, log, included_files, directive=None):
     included_files = included_files | frozenset([os.path.normpath(filename)])
     agent = AstAgent()
@@ -1321,17 +1313,21 @@ def parse_agent(filename, tokens, log, included_files, directive=None):
                 include_loc = tok.loc
                 tok = next(tokens)
                 if tok.lexeme != "(":
-                    raise log.error("expected '(' after include, got '%s'", tok.lexeme, loc=tok.loc, extra_locs=[include_loc])
+                    raise log.error("expected '(' after include, got '%s'", tok.lexeme, loc=tok.loc,
+                                    extra_locs=[include_loc])
                 tok = next(tokens)
                 if not tok.token.string:
-                    raise log.error("expected filename to include, got '%s'", tok.lexeme, loc=tok.loc, extra_locs=[include_loc])
+                    raise log.error("expected filename to include, got '%s'", tok.lexeme, loc=tok.loc,
+                                    extra_locs=[include_loc])
                 include = agentspeak.parse_string(tok.lexeme)
                 tok = next(tokens)
                 if tok.lexeme != ")":
-                    raise log.error("expected ')' after include filename, got '%s'", tok.lexeme, loc=tok.loc, extra_locs=[include_loc])
+                    raise log.error("expected ')' after include filename, got '%s'", tok.lexeme, loc=tok.loc,
+                                    extra_locs=[include_loc])
                 tok = next(tokens)
                 if tok.lexeme != "}":
-                    raise log.error("expected '}' to close include directive, got '%s'", tok.lexeme, loc=tok.loc, extra_locs=[include_loc])
+                    raise log.error("expected '}' to close include directive, got '%s'", tok.lexeme, loc=tok.loc,
+                                    extra_locs=[include_loc])
 
                 # Resolve included path.
                 include = os.path.join(os.path.dirname(filename), include)
@@ -1360,7 +1356,8 @@ def parse_agent(filename, tokens, log, included_files, directive=None):
                 tok = next(tokens)
                 tok, sub_directive = parse_literal(tok, tokens, log)
                 if tok.lexeme != "}":
-                    raise log.error("expected '}' after begin, got '%s'", tok.lexeme, loc=tok.loc, extra_locs=[begin_loc])
+                    raise log.error("expected '}' after begin, got '%s'", tok.lexeme, loc=tok.loc,
+                                    extra_locs=[begin_loc])
                 log.warning("directives are ignored as of yet", loc=sub_directive.loc)
                 sub_agent = parse(filename, tokens, log, included_files, sub_directive)
                 agent.beliefs += sub_agent.beliefs
@@ -1378,51 +1375,57 @@ def parse_agent(filename, tokens, log, included_files, directive=None):
                     return validate(agent, log)
             else:
                 raise log.error("expected 'include', or 'begin' or 'end' after '{', got '%s'", tok.lexeme, loc=tok.loc)
-        
+
 
         elif tok.token.functor:
             if last_plan is not None:
-                log.warning("assertion after plan. should this have been part of '%s'?", last_plan.signature(), loc=tok.loc)
+                log.warning("assertion after plan. should this have been part of '%s'?", last_plan.signature(),
+                            loc=tok.loc)
             tok, ast_node = parse_rule_or_belief(tok, tokens, log)
             if isinstance(ast_node, AstRule):
                 if tok.lexeme != ".":
                     log.info("missing '.' after this rule", loc=ast_node.loc)
-                    raise log.error("expected '.' after rule, got '%s'", tok.lexeme, loc=tok.loc, extra_locs=[ast_node.loc])
+                    raise log.error("expected '.' after rule, got '%s'", tok.lexeme, loc=tok.loc,
+                                    extra_locs=[ast_node.loc])
                 agent.rules.append(ast_node)
             else:
                 if tok.lexeme != ".":
                     log.info("missing '.' after this belief", loc=ast_node.loc)
-                    raise log.error("expected '.' after belief, got '%s'", tok.lexeme, loc=tok.loc, extra_locs=[ast_node.loc])
+                    raise log.error("expected '.' after belief, got '%s'", tok.lexeme, loc=tok.loc,
+                                    extra_locs=[ast_node.loc])
                 agent.beliefs.append(ast_node)
         elif tok.lexeme == "!":
             tok, ast_node = parse_initial_goal(tok, tokens, log)
             if tok.lexeme != ".":
                 log.info("missing '.' after this goal", loc=ast_node.loc)
-                raise log.error("expected '.' after initial goal, got '%s'", tok.lexeme, loc=tok.loc, extra_locs=[ast_node.loc])
+                raise log.error("expected '.' after initial goal, got '%s'", tok.lexeme, loc=tok.loc,
+                                extra_locs=[ast_node.loc])
             agent.goals.append(ast_node)
         elif tok.lexeme in ["@", "+", "-"]:
             tok, last_plan = parse_plan(tok, tokens, log)
-  
+
             if tok.lexeme != ".":
                 log.info("missing '.' after this plan", loc=last_plan.loc)
-                raise log.error("expected '.' after plan, got '%s'", tok.lexeme, loc=tok.loc, extra_locs=[last_plan.loc])
+                raise log.error("expected '.' after plan, got '%s'", tok.lexeme, loc=tok.loc,
+                                extra_locs=[last_plan.loc])
             agent.plans.append(last_plan)
         elif tok.lexeme == "concern__":
-            #TK CONCERN
-            tok, ast_node = parse_concern(tok, tokens, log) 
+            # TK CONCERN
+            tok, ast_node = parse_concern(tok, tokens, log)
             if isinstance(ast_node, AstConcern):
                 if tok.lexeme != ".":
                     log.info("missing '.' after this concern", loc=ast_node.loc)
-                    raise log.error("expected '.' after concern, got '%s'", tok.lexeme, loc=tok.loc, extra_locs=[ast_node.loc])
+                    raise log.error("expected '.' after concern, got '%s'", tok.lexeme, loc=tok.loc,
+                                    extra_locs=[ast_node.loc])
                 agent.concerns.append(ast_node)
         elif tok.lexeme == "personality__":
-            #TK PERSONALITY
-            tok, ast_node = parse_personality(tok, tokens, log) 
+            # TK PERSONALITY
+            tok, ast_node = parse_personality(tok, tokens, log)
             if isinstance(ast_node, AstPersonality):
                 agent.personality = ast_node
         elif tok.lexeme == "others__":
-            #TK OTHERS
-            tok, ast_node = parse_others(tok, tokens, log) 
+            # TK OTHERS
+            tok, ast_node = parse_others(tok, tokens, log)
             if isinstance(ast_node, AstOthers):
                 agent.others = ast_node
         else:
@@ -1760,7 +1763,8 @@ class ConstFoldVisitor(object):
             if isinstance(ast_formula.term, (AstLiteral, AstVariable)):
                 ast_formula.term = ast_formula.term.accept(TermFoldVisitor(self.log))
             else:
-                self.log.error("expected literal or variable after '%s'", ast_formula.formula_type, loc=ast_formula.loc, extra_locs=[ast_formula.term.loc])
+                self.log.error("expected literal or variable after '%s'", ast_formula.formula_type, loc=ast_formula.loc,
+                               extra_locs=[ast_formula.term.loc])
 
         return ast_formula
 
@@ -1772,7 +1776,7 @@ class ConstFoldVisitor(object):
         ast_rule.head = ast_rule.head.accept(TermFoldVisitor(self.log))
         ast_rule.consequence = ast_rule.consequence.accept(LogicalFoldVisitor(self.log))
         return ast_rule
-    
+
     def visit_concern(self, ast_concern):
         ast_concern.head = ast_concern.head.accept(TermFoldVisitor(self.log))
         ast_concern.consequence = ast_concern.consequence.accept(LogicalFoldVisitor(self.log))
@@ -1807,15 +1811,17 @@ def validate(ast_agent, log):
 
     for rule in ast_agent.rules:
         for op in rule.head.accept(FindOpVisitor()):
-            log.error("rule head is supposed to be unifiable, but contains non-const expression", loc=op.loc, extra_locs=[rule.loc])
+            log.error("rule head is supposed to be unifiable, but contains non-const expression", loc=op.loc,
+                      extra_locs=[rule.loc])
 
     for plan in ast_agent.plans:
         for op in plan.event.head.accept(FindOpVisitor()):
-            log.error("plan head is supposed to be unifiable, but contains non-const expression", loc=op.loc, extra_locs=[plan.loc])
+            log.error("plan head is supposed to be unifiable, but contains non-const expression", loc=op.loc,
+                      extra_locs=[plan.loc])
 
-        #for annotation in plan.annotations:
-            # Warning annotations ignored
-            #log.warning("plan annotations are ignored as of yet", loc=annotation.loc, extra_locs=[plan.loc])
+        # for annotation in plan.annotations:
+        # Warning annotations ignored
+        # log.warning("plan annotations are ignored as of yet", loc=annotation.loc, extra_locs=[plan.loc])
 
         if plan.event.goal_type != GoalType.belief and plan.event.trigger == Trigger.removal:
             log.warning("recovery plans are ignored as of yet", loc=plan.loc)

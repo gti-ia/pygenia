@@ -28,8 +28,8 @@ setup_requirements = [
 test_requirements = [ ]
 
 setup(
-    author="Jordi Caravaca",
-    author_email='jcarros@inf.upv.es',
+    author="Joaquin Taverner",
+    author_email='joataap@dsic.upv.es',
     python_requires='>=3.8',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',

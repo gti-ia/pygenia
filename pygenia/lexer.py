@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
-# This file is part of the pygenia interpreter that extens the 
-# python-agentspeak interpreter (Copyright (C) 2016-2019 Niklas 
+# This file is part of the pygenia interpreter that extends the
+# python-agentspeak interpreter (Copyright (C) 2016-2019 Niklas
 # Fiekas <niklas.fiekas@tu-clausthal.de>.)
 #
 # This program is free software: you can redistribute it and/or modify
@@ -86,7 +86,7 @@ class TokenType(enum.Enum):
     personality   = Token(r"personality__")
 
     others        = Token(r"others__")
-    
+
     space         = Token(r"\s+", space=True)
     comment       = Token(r"(//|#).*", comment=True)
 
@@ -154,7 +154,7 @@ class TokenType(enum.Enum):
     semicolon     = Token(r";")
     at            = Token(r"@")
 
-    
+
 
 
 RE_START_COMMENT = re.compile(r"/\*")
