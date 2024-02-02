@@ -23,6 +23,7 @@ import pygenia.parser
 LOGGER = agentspeak.get_logger(__name__)
 C = {}
 
+
 class Instruction(agentspeak.runtime.Instruction):
     def __init__(
         self,
@@ -35,6 +36,7 @@ class Instruction(agentspeak.runtime.Instruction):
         super(Instruction, self).__init__(f, loc, extra_locs)
         self.term = term
         self.goal_type = goal_type
+
 
 class PADExpression():
     """
@@ -82,6 +84,7 @@ class PADExpression():
         else:
             result = (result or (p <= self.AThreshold))
         return result
+
 
 class Personality():
     """
@@ -204,19 +207,20 @@ class TermQuery(agentspeak.runtime.TermQuery):
         concern = copy.deepcopy(concern)
         intention.stack.append(choicepoint)
 
-
         if agentspeak.unify(term, concern.head, intention.scope, intention.stack):
             for _ in concern.query.execute(agent, intention):
                 yield
 
         agentspeak.reroll(intention.scope, intention.stack, choicepoint)
 
+
 class AffectiveAgent(agentspeak.runtime.Agent):
     """
     This class is a subclass of the Agent class.
     It is used to add the affective layer to the agent.
     """
-    def __init__(self, env: agentspeak.runtime.Environment, name: str, beliefs = None, rules = None, plans = None, concerns = None):
+
+    def __init__(self, env: agentspeak.runtime.Environment, name: str, beliefs=None, rules=None, plans=None, concerns=None):
         """
         Constructor of the AffectiveAgent class.
 
@@ -273,12 +277,13 @@ class AffectiveAgent(agentspeak.runtime.Agent):
 
         # Personality definition
         # self.P = Personality()
-        self.P = {"tr": {"O":0,"C":0,"E":0,"A":0,"N":0},
+        self.P = {"tr": {"O": 0, "C": 0, "E": 0, "A": 0, "N": 0},
                   "rl": 0,
                   "cs": []}
 
         # Concerns definition
-        self.Cc = collections.defaultdict(lambda: []) if concerns is None else concerns
+        self.Cc = collections.defaultdict(
+            lambda: []) if concerns is None else concerns
 
         # Circunstance definition
         self.C = {"I": collections.deque(),
@@ -290,7 +295,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                   "Ap": [],
                   "i": None,
                   "R": [],
-                  "e":None}
+                  "e": None}
 
         # Affective memory definition (⟨event 𝜀, affective value av⟩)
         self.Mem = []
@@ -302,12 +307,12 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                    "Ae": [],
                    "Ee": [],
                    "Fe": [],
-                   "mood": PAD() }
+                   "mood": PAD()}
 
-        #This is an example of the use of affective categories:
-        self.affective_categories = { "neutral": [[-0.3, 0.3], [-0.3, 0.3], [-1, 1],],
-                                      "happy": [[0, 1], [0, 1], [-1, 1]],
-                                      "sad": [[-1, 0], [-1, 0], [-1, 1]]}
+        # This is an example of the use of affective categories:
+        self.affective_categories = {"neutral": [[-0.3, 0.3], [-0.3, 0.3], [-1, 1],],
+                                     "happy": [[0, 1], [0, 1], [-1, 1]],
+                                     "sad": [[-1, 0], [-1, 0], [-1, 1]]}
 
         self.event_queue = []
 
@@ -323,7 +328,8 @@ class AffectiveAgent(agentspeak.runtime.Agent):
 
         self.DISPLACEMENT = 0.5
         self.affRevEventThreshold = []
-        self.affRevEventThreshold.append(PADExpression(0.8, "or", 0.8, "and", 0.0))
+        self.affRevEventThreshold.append(
+            PADExpression(0.8, "or", 0.8, "and", 0.0))
 
     def add_concern(self, concern):
         """
@@ -357,12 +363,13 @@ class AffectiveAgent(agentspeak.runtime.Agent):
 
         try:
             next(query.execute_concern(self, intention, concern))
-            concern_value = " ".join(asl_str(agentspeak.freeze(t, intention.scope, {})) for t in term.args)
+            concern_value = " ".join(asl_str(agentspeak.freeze(
+                t, intention.scope, {})) for t in term.args)
             return concern_value
         except StopIteration:
             return False
 
-    def call(self, trigger: agentspeak.Trigger, goal_type:agentspeak.GoalType, term: agentspeak.Literal, calling_intention: agentspeak.runtime.Intention, delayed: bool = False):
+    def call(self, trigger: agentspeak.Trigger, goal_type: agentspeak.GoalType, term: agentspeak.Literal, calling_intention: agentspeak.runtime.Intention, delayed: bool = False):
         """ This method is used to call an event.
 
         Args:
@@ -398,7 +405,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             # We recieve a belief and the affective cycle is activated.
             # We need to provide to the sunction the term and the Trigger type.
             self.event_queue.append((term, trigger))
-            #self.appraisal((term, trigger),0)
+            # self.appraisal((term, trigger),0)
             if trigger == agentspeak.Trigger.addition:
                 self.add_belief(term, calling_intention.scope)
             else:
@@ -428,7 +435,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             if agentspeak.unifies_annotated(event.head, frozen):
                 intention.waiter = None
 
-
         # If the goal is an achievement and the trigger is an removal, then the agent will delete the goal from his list of intentions
         if goal_type == agentspeak.GoalType.achievement and trigger == agentspeak.Trigger.removal:
             if not agentspeak.is_literal(term):
@@ -452,7 +458,8 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             str_plan = term.args[2]
 
             tokens = []
-            tokens.extend(agentspeak.lexer.tokenize(agentspeak.StringSource("<stdin>", str_plan), agentspeak.Log(LOGGER), 1)) # extend the tokens with the tokens of the string plan
+            tokens.extend(agentspeak.lexer.tokenize(agentspeak.StringSource("<stdin>", str_plan), agentspeak.Log(
+                LOGGER), 1))  # extend the tokens with the tokens of the string plan
 
             # Prepare the conversion from tokens to AstPlan
             first_token = tokens[0]
@@ -462,7 +469,8 @@ class AffectiveAgent(agentspeak.runtime.Agent):
 
             # Converts the list of tokens to a Astplan
             if first_token.lexeme in ["@", "+", "-"]:
-                tok, ast_plan = agentspeak.parser.parse_plan(first_token, tokens, log)
+                tok, ast_plan = agentspeak.parser.parse_plan(
+                    first_token, tokens, log)
                 if tok.lexeme != ".":
                     raise log.error("", tok, "expected end of plan")
 
@@ -470,20 +478,24 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             variables = {}
             actions = agentspeak.stdlib.actions
 
-            head = ast_plan.event.head.accept(agentspeak.runtime.BuildTermVisitor(variables))
+            head = ast_plan.event.head.accept(
+                agentspeak.runtime.BuildTermVisitor(variables))
 
             if ast_plan.context:
-                context = ast_plan.context.accept(BuildQueryVisitor(variables, actions, log))
+                context = ast_plan.context.accept(
+                    BuildQueryVisitor(variables, actions, log))
             else:
                 context = TrueQuery()
 
             body = Instruction(agentspeak.runtime.noop)
             body.f = agentspeak.runtime.noop
             if ast_plan.body:
-                ast_plan.body.accept(BuildInstructionsVisitor(variables, actions, body, log))
+                ast_plan.body.accept(BuildInstructionsVisitor(
+                    variables, actions, body, log))
 
-            #Converts the Astplan to Plan
-            plan = agentspeak.runtime.Plan(ast_plan.event.trigger, ast_plan.event.goal_type, head, context, body,ast_plan.body,ast_plan.annotations)
+            # Converts the Astplan to Plan
+            plan = agentspeak.runtime.Plan(
+                ast_plan.event.trigger, ast_plan.event.goal_type, head, context, body, ast_plan.body, ast_plan.annotations)
 
             if ast_plan.args[0] is not None:
                 plan.args[0] = ast_plan.args[0]
@@ -491,15 +503,15 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             if ast_plan.args[1] is not None:
                 plan.args[1] = ast_plan.args[1]
 
-
             # Add the plan to the agent
             self.add_plan(plan)
             return True
 
         # If the goal is an askHow and the trigger is an addition, then the agent will find the plan in his list of plans and send it to the agent that asked
         if goal_type == agentspeak.GoalType.askHow and trigger == agentspeak.Trigger.addition:
-           self.T["e"] =  agentspeak.runtime.Event(trigger,goal_type,term.args[2])
-           return self._ask_how(term)
+            self.T["e"] = agentspeak.runtime.Event(
+                trigger, goal_type, term.args[2])
+            return self._ask_how(term)
 
         # If the goal is an unTellHow and the trigger is a removal, then the agent will delete the goal from his list of plans
         if goal_type == agentspeak.GoalType.tellHow and trigger == agentspeak.Trigger.removal:
@@ -516,18 +528,17 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                 plan.remove(differents)
             return True
 
-
-        self.C["E"] = [agentspeak.runtime.Event(trigger,goal_type,term)] if "E" not in self.C else self.C["E"] + [agentspeak.runtime.Event(trigger,goal_type,term)]
+        self.C["E"] = [agentspeak.runtime.Event(trigger, goal_type, term)] if "E" not in self.C else self.C["E"] + [
+            agentspeak.runtime.Event(trigger, goal_type, term)]
         self.current_step = "SelEv"
         self.applySemanticRuleDeliberate(delayed, calling_intention)
 
-        #if goal_type == agentspeak.GoalType.achievement and trigger == agentspeak.Trigger.addition:
+        # if goal_type == agentspeak.GoalType.achievement and trigger == agentspeak.Trigger.addition:
         #    raise AslError("no applicable plan for %s%s%s/%d" % (
         #        trigger.value, goal_type.value, frozen.functor, len(frozen.args)))
-        #elif goal_type == agentspeak.GoalType.test:
+        # elif goal_type == agentspeak.GoalType.test:
         #    return self.test_belief(term, calling_intention)
         return True
-
 
     def applySelEv(self) -> bool:
         """
@@ -537,12 +548,13 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             bool: True if the event was selected
         """
 
-        #self.term = self.ast_goal.atom.accept(agentspeak.runtime.BuildTermVisitor({}))
+        # self.term = self.ast_goal.atom.accept(agentspeak.runtime.BuildTermVisitor({}))
         if "E" in self.C and len(self.C["E"]) > 0:
             # Select one event from the list of events and remove it from the list without using pop
             self.T["e"] = self.C["E"][0]
             self.C["E"] = self.C["E"][1:]
-            self.frozen = agentspeak.freeze(self.T["e"].head, agentspeak.runtime.Intention().scope, {})
+            self.frozen = agentspeak.freeze(
+                self.T["e"].head, agentspeak.runtime.Intention().scope, {})
             self.T["i"] = agentspeak.runtime.Intention()
             self.current_step = "RelPl"
         else:
@@ -568,7 +580,8 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         for plan in plans:
             for differents in plan:
                 if self.T["e"].head.functor in differents.head.functor:
-                    RelPlan[(differents.trigger, differents.goal_type, differents.head.functor, len(differents.head.args))].append(differents)
+                    RelPlan[(differents.trigger, differents.goal_type, differents.head.functor, len(
+                        differents.head.args))].append(differents)
 
         if not RelPlan:
             self.current_step = "SelEv"
@@ -607,7 +620,8 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         - The current step will be changed to "SelAppl"
         - If not applicable plans were found, return False
         """
-        plans_list = self.T["R"][(self.T["e"].trigger, self.T["e"].goal_type, self.frozen.functor, len(self.frozen.args))]
+        plans_list = self.T["R"][(
+            self.T["e"].trigger, self.T["e"].goal_type, self.frozen.functor, len(self.frozen.args))]
 
         self.T["Ap"] = [plan for plan in plans_list if self.check_affect(plan)]
 
@@ -631,11 +645,11 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         - If not plan was found, return False
         """
         for plan in self.T["Ap"]:
-                for _ in agentspeak.unify_annotated(plan.head, self.frozen, self.T["i"].scope, self.T["i"].stack):
-                    for _ in plan.context.execute(self, self.T["i"]):
-                        self.T["p"] = plan
-                        self.current_step = "AddIM"
-                        return True
+            for _ in agentspeak.unify_annotated(plan.head, self.frozen, self.T["i"].scope, self.T["i"].stack):
+                for _ in plan.context.execute(self, self.T["i"]):
+                    self.T["p"] = plan
+                    self.current_step = "AddIM"
+                    return True
         return False
 
     def applyAddIM(self, delayed, calling_intention) -> bool:
@@ -703,10 +717,10 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         """
 
         options = {
-            "Appr" : self.applyAppraisal,
-            "UpAs" : self.applyUpdateAffState,
-            "SelCs" : self.applySelectCopingStrategy,
-            "Cope" : self.applyCope
+            "Appr": self.applyAppraisal,
+            "UpAs": self.applyUpdateAffState,
+            "SelCs": self.applySelectCopingStrategy,
+            "Cope": self.applyCope
         }
 
         flag = True
@@ -729,25 +743,26 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         selectingCs = True
         result = False
         if event != None:
-                # Calculating desirability
-                if len(self.Cc):
-                    desirability =  self.desirability(event)
-                    self.Ta["Av"]["desirability"] = desirability
+            # Calculating desirability
+            if len(self.Cc):
+                desirability = self.desirability(event)
+                self.Ta["Av"]["desirability"] = desirability
 
-                # Calculating likelihood.
-                likelihood = self.likelihood(event)
-                self.Ta["Av"]["likelihood"] = likelihood
+            # Calculating likelihood.
+            likelihood = self.likelihood(event)
+            self.Ta["Av"]["likelihood"] = likelihood
 
-                # Calculating causal attribution
-                causal_attribution = self.causalAttribution(event)
-                self.Ta["Av"]["causal_attribution"] = causal_attribution
+            # Calculating causal attribution
+            causal_attribution = self.causalAttribution(event)
+            self.Ta["Av"]["causal_attribution"] = causal_attribution
 
-                # Calculating controllability:
-                if len(self.Cc):
-                    controllability = self.controllability(event,concern_value,desirability)
-                    self.Ta["Av"]["controllability"] = controllability
-                    pass
-                result = True
+            # Calculating controllability:
+            if len(self.Cc):
+                controllability = self.controllability(
+                    event, concern_value, desirability)
+                self.Ta["Av"]["controllability"] = controllability
+                pass
+            result = True
         else:
             self.Ta["Av"]["desirability"] = None
             self.Ta["Av"]["expectedness"] = None
@@ -773,9 +788,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             result = desirability - concernsValue
             result = ((result + 1)/2)
         return result
-
-
-
 
     def causalAttribution(self, event):
         """
@@ -809,7 +821,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             result = 1.0
         return result
 
-
     def expectedness(self, event, remove):
         """
         This method is used to calculate the expectedness of the event.
@@ -839,8 +850,8 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                     if remove:
                         self.notFulfilledExpectations.pop(index)
 
-        #processing events that "didn't happen" and were expected in this affective cycle
-        #Averaging negative expectedness and removing this value from the previous result
+        # processing events that "didn't happen" and were expected in this affective cycle
+        # Averaging negative expectedness and removing this value from the previous result
         av = 0
         count = 0
         for i in range(len(self.notFulfilledExpectations)):
@@ -852,9 +863,9 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             result2 = (av/count)
 
         if result1 != None and result2 != None:
-            result = max(-1,result1 - result2)
+            result = max(-1, result1 - result2)
 
-        return result # range [-1,1]
+        return result  # range [-1,1]
 
     def desirability(self, event):
         """
@@ -867,15 +878,15 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             float: Desirability of the event.
         """
         concernVal = None
-        concern = self.Cc[("concern__",1)][0] # This function return the first concern of the agent
-
+        # This function return the first concern of the agent
+        concern = self.Cc[("concern__", 1)][0]
 
         if concern != None:
             if event[1].name == "addition":
                 # adding the new literal if the event is an addition of a belief
-                concernVal = self.applyConcernForAddition(event,concern)
+                concernVal = self.applyConcernForAddition(event, concern)
             else:
-                concernVal = self.applyConcernForDeletion(event,concern)
+                concernVal = self.applyConcernForDeletion(event, concern)
 
             if concernVal != None:
                 if float(concernVal) < 0 or float(concernVal) > 1:
@@ -896,16 +907,14 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         """
 
         # We add the new belief to the agent's belief base, so we can calculate the concern value
-        #self.add_belief(event[0], agentspeak.runtime.Intention().scope)
+        # self.add_belief(event[0], agentspeak.runtime.Intention().scope)
         # We calculate the concern value
-        concern_value = self.test_concern(concern.head, agentspeak.runtime.Intention(), concern)
+        concern_value = self.test_concern(
+            concern.head, agentspeak.runtime.Intention(), concern)
         # We remove the belief from the agent's belief base again
-        #self.remove_belief(event[0], agentspeak.runtime.Intention())
+        # self.remove_belief(event[0], agentspeak.runtime.Intention())
 
         return concern_value
-
-
-
 
     def applyConcernForDeletion(self, event, concern):
         """
@@ -920,16 +929,14 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         """
 
         # We remove the belief from the agent's belief base, so we can calculate the concern value
-        #self.remove_belief(event[0], agentspeak.runtime.Intention())
+        # self.remove_belief(event[0], agentspeak.runtime.Intention())
         # We calculate the concern value
-        concern_value = self.test_concern(concern.head, agentspeak.runtime.Intention(), concern)
+        concern_value = self.test_concern(
+            concern.head, agentspeak.runtime.Intention(), concern)
         # We add the belief to the agent's belief base again
-        #self.add_belief(event[0], agentspeak.runtime.Intention())
+        # self.add_belief(event[0], agentspeak.runtime.Intention())
 
         return concern_value
-
-
-
 
     def applyAppraisal(self) -> bool:
         """
@@ -937,7 +944,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         """
 
         ped = PairEventDesirability(None)
-        if True: # while self.lock instead of True for the real implementation
+        if True:  # while self.lock instead of True for the real implementation
             if self.event_queue:
                 ped.event = self.event_queue.pop()
 
@@ -965,7 +972,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         SelectingCs = True
         while SelectingCs and self.C["CS"]:
             SelectingCs = self.cope()
-        #self.current_step_ast = "Appr"
+        # self.current_step_ast = "Appr"
         return False
 
     def cope(self):
@@ -992,7 +999,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             bool: True if the coping strategy was selected, False otherwise.
         """
         self.C["CS"] = []
-        #self.selectCs()
+        # self.selectCs()
         self.current_step_ast = "Cope"
         return True
 
@@ -1015,7 +1022,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                 self.C["AfE"] = []
         """
         pass
-
 
     def applyUpdateAffState(self):
         """
@@ -1040,7 +1046,8 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         """
         result = currentEvent != None
         for ex in self.affRevEventThreshold:
-            result = result and ex.evaluate(self.Ta["mood"].getP(), self.Ta["mood"].getA(), self.Ta["mood"].getD())
+            result = result and ex.evaluate(
+                self.Ta["mood"].getP(), self.Ta["mood"].getA(), self.Ta["mood"].getD())
         return result
 
     def UpdateAS(self):
@@ -1063,14 +1070,15 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                 vectorToAdd_P = None
                 vectorToAdd_A = None
                 vectorToAdd_D = None
-                lengthToAdd  = None
+                lengthToAdd = None
                 VEC = calculated_as
 
                 # Calculating the module of VEC
-                VECmodule = math.sqrt( math.pow(VEC.getP(),2) + math.pow(VEC.getA(),2) + math.pow(VEC.getD(),2) )
+                VECmodule = math.sqrt(
+                    math.pow(VEC.getP(), 2) + math.pow(VEC.getA(), 2) + math.pow(VEC.getD(), 2))
 
                 # 1 Applying the pull and push of ALMA
-                if PAD.betweenVECandCenter( current_as, VEC) or not PAD.sameOctant(current_as, VEC):
+                if PAD.betweenVECandCenter(current_as, VEC) or not PAD.sameOctant(current_as, VEC):
                     vDiff_P = VEC.getP() - current_as.getP()
                     vDiff_A = VEC.getA() - current_as.getA()
                     vDiff_D = VEC.getD() - current_as.getD()
@@ -1096,21 +1104,21 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                 else:
                     if tmpVal < -1:
                         tmpVal = -1.0
-                pad.setP( round(tmpVal * 10.0) / 10.0 )
+                pad.setP(round(tmpVal * 10.0) / 10.0)
                 tmpVal = current_as.getA() + vectorToAdd_A
                 if tmpVal > 1:
                     tmpVal = 1.0
                 else:
                     if tmpVal < -1:
                         tmpVal = -1.0
-                pad.setA(  round(tmpVal * 10.0) / 10.0 )
+                pad.setA(round(tmpVal * 10.0) / 10.0)
                 tmpVal = current_as.getD() + vectorToAdd_D
                 if tmpVal > 1:
                     tmpVal = 1.0
                 else:
                     if tmpVal < -1:
                         tmpVal = -1.0
-                pad.setD(  round(tmpVal * 10.0) / 10.0 )
+                pad.setD(round(tmpVal * 10.0) / 10.0)
 
                 self.Ta["mood"] = pad
                 AClabel = self.getACLabel()
@@ -1138,13 +1146,13 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                         matches = matches and self.Ta["mood"].components[i] >= r[0] and self.Ta["mood"].components[i] <= r[1]
                 else:
                     try:
-                        raise Exception("The number of components for the affective category " + acl + " must be the same as the number of the components for the affective state")
+                        raise Exception("The number of components for the affective category " + acl +
+                                        " must be the same as the number of the components for the affective state")
                     except Exception as e:
                         print(e)
             if matches:
                 result.append(acl)
         return result
-
 
     def deriveASFromAppraisalVariables(self):
         """
@@ -1207,7 +1215,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         else:
             result = None
         return result
-
 
     def cleanAffectivelyRelevantEvents(self) -> bool:
         return True
@@ -1300,15 +1307,18 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         """
         try:
             if self.intention_selected.instr.f(self, self.intention_selected):
-                self.intention_selected.instr = self.intention_selected.instr.success # We set the intention.instr to the instr.success
+                # We set the intention.instr to the instr.success
+                self.intention_selected.instr = self.intention_selected.instr.success
             else:
-                self.intention_selected.instr = self.intention_selected.instr.failure # We set the intention.instr to the instr.failure
+                # We set the intention.instr to the instr.failure
+                self.intention_selected.instr = self.intention_selected.instr.failure
                 if not self.T["i"].instr:
                     raise AslError("plan failure")
 
         except AslError as err:
             log = agentspeak.Log(LOGGER)
-            raise log.error("%s", err, loc=self.T["i"].instr.loc, extra_locs=self.T["i"].instr.extra_locs)
+            raise log.error(
+                "%s", err, loc=self.T["i"].instr.loc, extra_locs=self.T["i"].instr.extra_locs)
         except Exception as err:
             log = agentspeak.Log(LOGGER)
             raise log.exception("agent %r raised python exception: %r", self.name, err,
@@ -1326,14 +1336,15 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         if not self.intention_stack:
             self.C["I"].remove(self.intention_stack)
         elif self.intention_selected.calling_term:
-            frozen = self.intention_selected.head_term.freeze(self.intention_selected.scope, {})
+            frozen = self.intention_selected.head_term.freeze(
+                self.intention_selected.scope, {})
 
             calling_intention = self.intention_stack[-1]
             if not agentspeak.unify(self.intention_selected.calling_term, frozen, calling_intention.scope, calling_intention.stack):
                 raise RuntimeError("back unification failed")
         return True
 
-    def waiters(self) -> Iterator[agentspeak.runtime.Waiter]    :
+    def waiters(self) -> Iterator[agentspeak.runtime.Waiter]:
         """
         This method is used to get the waiters of the intentions
 
@@ -1360,7 +1371,8 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                     await sem_affective.acquire()
                     self.current_step_ast = "Appr"
                     self.affectiveTransitionSystem()
-                    release_sem(sem_rational, rational_turns, sem_affective.locked())
+                    release_sem(sem_rational, rational_turns,
+                                sem_affective.locked())
 
             # Rational cycle
             async def rational():
@@ -1375,7 +1387,8 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                     if not self.step():
                         end_event.set()
 
-                    release_sem(sem_affective, affective_turns, sem_rational.locked())
+                    release_sem(sem_affective, affective_turns,
+                                sem_rational.locked())
 
             # Create the semaphores that will be used to synchronize the two functions
             sem_affective = asyncio.Semaphore(affective_turns)
@@ -1403,8 +1416,10 @@ class Environment(agentspeak.runtime.Environment):
     Args:
         agentspeak.runtime.Environment: The environment of the agent defined in the agentspeak library
     """
+
     def ast_plan_body_visit(self, ast_plan, variables, actions, body, log):
-        ast_plan.body.accept(BuildInstructionsVisitor(variables, actions, body, log))
+        ast_plan.body.accept(BuildInstructionsVisitor(
+            variables, actions, body, log))
 
     def build_agent_from_ast(self, source, ast_agent, actions, agent_cls=agentspeak.runtime.Agent, name=None):
         """
@@ -1415,7 +1430,7 @@ class Environment(agentspeak.runtime.Environment):
 
         """
 
-        #agent_cls = AffectiveAgent
+        # agent_cls = AffectiveAgent
 
         log = agentspeak.Log(LOGGER, 3)
         agent = agent_cls(self, self._make_name(name or source.name))
@@ -1428,8 +1443,10 @@ class Environment(agentspeak.runtime.Environment):
         # Add rules to agent prototype.
         for ast_rule in ast_agent.rules:
             variables = {}
-            head = ast_rule.head.accept(agentspeak.runtime.BuildTermVisitor(variables))
-            consequence = ast_rule.consequence.accept(BuildQueryVisitor(variables, actions, log))
+            head = ast_rule.head.accept(
+                agentspeak.runtime.BuildTermVisitor(variables))
+            consequence = ast_rule.consequence.accept(
+                BuildQueryVisitor(variables, actions, log))
             rule = agentspeak.runtime.Rule(head, consequence)
             agent.add_rule(rule)
 
@@ -1437,21 +1454,25 @@ class Environment(agentspeak.runtime.Environment):
         for ast_plan in ast_agent.plans:
             variables = {}
 
-            head = ast_plan.event.head.accept(agentspeak.runtime.BuildTermVisitor(variables))
+            head = ast_plan.event.head.accept(
+                agentspeak.runtime.BuildTermVisitor(variables))
 
             if ast_plan.context:
-                context = ast_plan.context.accept(BuildQueryVisitor(variables, actions, log))
+                context = ast_plan.context.accept(
+                    BuildQueryVisitor(variables, actions, log))
             else:
                 context = TrueQuery()
 
             body = Instruction(agentspeak.runtime.noop)
             body.f = agentspeak.runtime.noop
             if ast_plan.body:
-                ast_plan.body.accept(BuildInstructionsVisitor(variables, actions, body, log))
+                ast_plan.body.accept(BuildInstructionsVisitor(
+                    variables, actions, body, log))
 
             str_body = str(ast_plan.body)
 
-            plan = agentspeak.runtime.Plan(ast_plan.event.trigger, ast_plan.event.goal_type, head, context, body, ast_plan.body, ast_plan.annotations)
+            plan = agentspeak.runtime.Plan(
+                ast_plan.event.trigger, ast_plan.event.goal_type, head, context, body, ast_plan.body, ast_plan.annotations)
 
             if ast_plan.args[0] is not None:
                 plan.args[0] = ast_plan.args[0]
@@ -1474,18 +1495,24 @@ class Environment(agentspeak.runtime.Environment):
         for ast_goal in ast_agent.goals:
             # Start the first part of the reasoning cycle.
             agent.current_step = "SelEv"
-            term = ast_goal.atom.accept(agentspeak.runtime.BuildTermVisitor({}))
-            f_event = agentspeak.runtime.Event(agentspeak.Trigger.addition, agentspeak.GoalType.achievement,term)
-            agent.C["E"] = [f_event] if "E" not in agent.C else agent.C["E"] + [f_event]
+            term = ast_goal.atom.accept(
+                agentspeak.runtime.BuildTermVisitor({}))
+            f_event = agentspeak.runtime.Event(
+                agentspeak.Trigger.addition, agentspeak.GoalType.achievement, term)
+            agent.C["E"] = [
+                f_event] if "E" not in agent.C else agent.C["E"] + [f_event]
 
          # Add rules to agent prototype.
         for concern in ast_agent.concerns:
             variables = {}
-            head = concern.head.accept(agentspeak.runtime.BuildTermVisitor(variables))
-            consequence = concern.consequence.accept(BuildQueryVisitor(variables, actions, log))
+            head = concern.head.accept(
+                agentspeak.runtime.BuildTermVisitor(variables))
+            consequence = concern.consequence.accept(
+                BuildQueryVisitor(variables, actions, log))
             concern = Concern(head, consequence)
             agent.add_concern(concern)
-            concern_value = agent.test_concern(head, agentspeak.runtime.Intention(), concern)
+            concern_value = agent.test_concern(
+                head, agentspeak.runtime.Intention(), concern)
 
         # Report errors.
         log.throw()
@@ -1533,11 +1560,14 @@ class Environment(agentspeak.runtime.Environment):
                 if agent.run():
                     maybe_more_work = True
             if not maybe_more_work:
-                deadlines = (agent.shortest_deadline() for agent in self.agents.values())
-                deadlines = [deadline for deadline in deadlines if deadline is not None]
+                deadlines = (agent.shortest_deadline()
+                             for agent in self.agents.values())
+                deadlines = [
+                    deadline for deadline in deadlines if deadline is not None]
                 if deadlines:
                     time.sleep(min(deadlines) - self.time())
                     maybe_more_work = True
+
 
 def call(trigger: agentspeak.Trigger, goal_type: agentspeak.GoalType, term: agentspeak.Literal, agent: AffectiveAgent, intention: agentspeak.runtime.Intention):
     """
@@ -1553,10 +1583,12 @@ def call(trigger: agentspeak.Trigger, goal_type: agentspeak.GoalType, term: agen
     """
     return agent.call(trigger, goal_type, term, intention, delayed=False)
 
+
 class BuildQueryVisitor(agentspeak.runtime.BuildQueryVisitor):
 
     def visit_literal(self, ast_literal):
-        term = ast_literal.accept(agentspeak.runtime.BuildTermVisitor(self.variables))
+        term = ast_literal.accept(
+            agentspeak.runtime.BuildTermVisitor(self.variables))
         try:
             arity = len(ast_literal.terms)
             action_impl = self.actions.lookup(ast_literal.functor, arity)
@@ -1568,53 +1600,70 @@ class BuildQueryVisitor(agentspeak.runtime.BuildQueryVisitor):
                                  extra_locs=[t.loc for t in ast_literal.terms])
             return agentspeak.runtime.TermQuery(term)
 
+
 class TrueQuery(agentspeak.runtime.TrueQuery):
     def __str__(self):
         return "true"
 
+
 class ActionQuery(agentspeak.runtime.ActionQuery):
 
     def execute(self, agent, intention):
-        agent.C["A"] = [(self.term, self.impl)] if "A" not in agent.C else agent.C["A"] + [(self.term, self.impl)]
+        agent.C["A"] = [
+            (self.term, self.impl)] if "A" not in agent.C else agent.C["A"] + [(self.term, self.impl)]
         for _ in self.impl(agent, self.term, intention):
             yield
+
 
 class BuildInstructionsVisitor(agentspeak.runtime.BuildInstructionsVisitor):
     def add_instr(self, f, loc=None, extra_locs=(), term=None, goal_type=None):
         self.tail.success = Instruction(f, loc, extra_locs, term, goal_type)
         self.tail = self.tail.success
         return self.tail
+
     def visit_formula(self, ast_formula):
         if ast_formula.formula_type == agentspeak.FormulaType.add:
-            term = ast_formula.term.accept(agentspeak.runtime.BuildTermVisitor(self.variables))
+            term = ast_formula.term.accept(
+                agentspeak.runtime.BuildTermVisitor(self.variables))
             self.add_instr(functools.partial(agentspeak.runtime.add_belief, term),
                            loc=ast_formula.loc, extra_locs=[ast_formula.term.loc])
         elif ast_formula.formula_type == agentspeak.FormulaType.remove:
-            term = ast_formula.term.accept(agentspeak.runtime.BuildTermVisitor(self.variables))
-            self.add_instr(functools.partial(agentspeak.runtime.remove_belief, term))
+            term = ast_formula.term.accept(
+                agentspeak.runtime.BuildTermVisitor(self.variables))
+            self.add_instr(functools.partial(
+                agentspeak.runtime.remove_belief, term))
         elif ast_formula.formula_type == agentspeak.FormulaType.test:
-            term = ast_formula.term.accept(agentspeak.runtime.BuildTermVisitor(self.variables))
+            term = ast_formula.term.accept(
+                agentspeak.runtime.BuildTermVisitor(self.variables))
             self.add_instr(functools.partial(agentspeak.runtime.test_belief, term),
                            loc=ast_formula.loc, extra_locs=[ast_formula.term.loc])
         elif ast_formula.formula_type == agentspeak.FormulaType.replace:
-            removal_term = ast_formula.term.accept(agentspeak.runtime.BuildReplacePatternVisitor())
-            self.add_instr(functools.partial(agentspeak.runtime.remove_belief, removal_term))
+            removal_term = ast_formula.term.accept(
+                agentspeak.runtime.BuildReplacePatternVisitor())
+            self.add_instr(functools.partial(
+                agentspeak.runtime.remove_belief, removal_term))
 
-            term = ast_formula.term.accept(agentspeak.runtime.BuildTermVisitor(self.variables))
+            term = ast_formula.term.accept(
+                agentspeak.runtime.BuildTermVisitor(self.variables))
             self.add_instr(functools.partial(agentspeak.runtime.add_belief, term),
                            loc=ast_formula.loc, extra_locs=[ast_formula.term.loc])
         elif ast_formula.formula_type == agentspeak.FormulaType.achieve:
-            term = ast_formula.term.accept(agentspeak.runtime.BuildTermVisitor(self.variables))
+            term = ast_formula.term.accept(
+                agentspeak.runtime.BuildTermVisitor(self.variables))
             self.add_instr(functools.partial(call, agentspeak.Trigger.addition, agentspeak.GoalType.achievement, term),
                            loc=ast_formula.loc, extra_locs=[ast_formula.term.loc], term=term, goal_type=agentspeak.GoalType.achievement)
         elif ast_formula.formula_type == agentspeak.FormulaType.achieve_later:
-            term = ast_formula.term.accept(agentspeak.runtime.BuildTermVisitor(self.variables))
+            term = ast_formula.term.accept(
+                agentspeak.runtime.BuildTermVisitor(self.variables))
             self.add_instr(functools.partial(agentspeak.runtime.call_delayed, agentspeak.Trigger.addition, agentspeak.GoalType.achievement, term),
-                           loc=ast_formula.loc, extra_locs=[ast_formula.term.loc],term=term, goal_type=agentspeak.GoalType.achievement)
+                           loc=ast_formula.loc, extra_locs=[ast_formula.term.loc], term=term, goal_type=agentspeak.GoalType.achievement)
         elif ast_formula.formula_type == agentspeak.FormulaType.term:
-            query = ast_formula.term.accept(BuildQueryVisitor(self.variables, self.actions, self.log))
-            self.add_instr(functools.partial(agentspeak.runtime.push_query, query))
-            self.add_instr(agentspeak.runtime.next_or_fail, loc=ast_formula.term.loc)
+            query = ast_formula.term.accept(BuildQueryVisitor(
+                self.variables, self.actions, self.log))
+            self.add_instr(functools.partial(
+                agentspeak.runtime.push_query, query))
+            self.add_instr(agentspeak.runtime.next_or_fail,
+                           loc=ast_formula.term.loc)
             self.add_instr(agentspeak.runtime.pop_query)
 
         return self.tail
@@ -1624,19 +1673,20 @@ class Concern:
     """
     This class is used to represent the concern of the agent
     """
+
     def __init__(self, head, query):
         self.head = head
         self.query = query
-
 
     def __str__(self):
         return "%s :- %s" % (self.head, self.query)
 
 
 class PairEventDesirability:
-        def __init__(self, event):
-            self.event = event
-            self.av = {}
+    def __init__(self, event):
+        self.event = event
+        self.av = {}
+
 
 class AffectiveState:
 
@@ -1665,7 +1715,6 @@ class AffectiveState:
 
         """
         pass
-
 
     def getAffectiveLabels(self):
         """
@@ -1730,11 +1779,11 @@ class AffectiveState:
     def clone(self):
         pass
 
+
 class PAD(AffectiveState):
     """
     This class is used to represent the PAD of the agent
     """
-
 
     class PADlabels(Enum):
         pleassure = 0
@@ -1783,9 +1832,9 @@ class PAD(AffectiveState):
         """
         result = False
         if as1 is not None and as2 is not None:
-            result = (  np.sign(as1.getP()) == np.sign(as2.getP()) and
-                        np.sign(as1.getA()) == np.sign(as2.getA()) and
-                        np.sign(as1.getD()) == np.sign(as2.getD()))
+            result = (np.sign(as1.getP()) == np.sign(as2.getP()) and
+                      np.sign(as1.getA()) == np.sign(as2.getA()) and
+                      np.sign(as1.getD()) == np.sign(as2.getD()))
         return result
 
     @staticmethod
@@ -1804,7 +1853,8 @@ class PAD(AffectiveState):
         if as1 is not None and as2 is not None:
             result = ((as1.getP() < 0 and as2.getP() > as1.getP()) or (as1.getP() > 0 and as2.getP() < as1.getP())) or \
                      ((as1.getA() < 0 and as2.getA() > as1.getA()) or (as1.getA() > 0 and as2.getA() < as1.getA())) or \
-                     ((as1.getD() < 0 and as2.getD() > as1.getD()) or (as1.getD() > 0 and as2.getD() < as1.getD()))
+                     ((as1.getD() < 0 and as2.getD() > as1.getD()) or (
+                         as1.getD() > 0 and as2.getD() < as1.getD()))
 
         return result
 
@@ -1825,5 +1875,3 @@ class PAD(AffectiveState):
 
     def setD(self, d):
         self.components[self.PADlabels.dominance.value] = d
-
-
