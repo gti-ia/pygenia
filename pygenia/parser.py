@@ -28,10 +28,10 @@ import agentspeak.util
 from agentspeak import Trigger, GoalType, FormulaType, UnaryOp, BinaryOp
 from agentspeak.parser import AstNode, AstList, AstLinkedList, AstRule, AstGoal, AstFormula, AstConst, AstVariable, AstUnaryOp, AstBinaryOp
 from agentspeak.parser import AstEvent, AstBody, AstWhile, AstFor, AstIfThenElse, FindVariablesVisitor, FindOpVisitor, NumericFoldVisitor
-from agentspeak.parser import BooleanFoldVisitor, TermFoldVisitor, LogicalFoldVisitor, ConstFoldVisitor
+from agentspeak.parser import BooleanFoldVisitor, TermFoldVisitor, LogicalFoldVisitor
 from agentspeak.parser import parse_list, parse_linked_list_tail, parse_atom, parse_power, parse_factor, parse_product, parse_arith_expr
 from agentspeak.parser import parse_comparison, parse_not_expr, parse_and_expr, parse_term, parse_rule_or_belief, parse_initial_goal, parse_body
-from agentspeak.parser import parse_while, parse_for, parse_if_then_else, parse_body_formula, parse_plan_body, parse_event, validate, parse, main, repl
+from agentspeak.parser import parse_while, parse_for, parse_if_then_else, parse_body_formula, parse_plan_body, parse_event, parse, validate, main, repl
 
 
 class AstBaseVisitor(object):
@@ -96,6 +96,9 @@ class AstBaseVisitor(object):
         pass
 
 
+agentspeak.parser.AstBaseVisitor = AstBaseVisitor
+
+
 class AstLiteral(AstNode):
     def __init__(self):
         super(AstLiteral, self).__init__()
@@ -122,6 +125,9 @@ class AstLiteral(AstNode):
             builder.append(", ".join(str(term) for term in self.annotations))
             builder.append("]")
         return "".join(builder)
+
+
+agentspeak.parser.AstLiteral = AstLiteral
 
 
 class AstTimePointRange(AstNode):
@@ -188,6 +194,9 @@ class AstPlan(AstNode):
         return "".join(builder)
 
 
+agentspeak.parser.AstPlan = AstPlan
+
+
 class AstAgent(AstNode):
     def __init__(self):
         super(AstAgent, self).__init__()
@@ -234,6 +243,9 @@ class AstAgent(AstNode):
             builder.append(".")
 
         return "".join(builder)
+
+
+agentspeak.parser.AstAgent = AstAgent
 
 
 def parse_tkconcern(tok, tokens, log):
@@ -309,6 +321,9 @@ def parse_literal(tok, tokens, log):
         literal.time_range = time_range
 
     return tok, literal
+
+
+agentspeak.parser.parse_literal = parse_literal
 
 
 def parse_time_point_range(tok, tokens, log):
@@ -578,6 +593,9 @@ def parse_plan(tok, tokens, log):
     return tok, plan
 
 
+agentspeak.parser.parse_plan = parse_plan
+
+
 class AstConcern(AstNode):
     def __init__(self):
         super(AstConcern, self).__init__()
@@ -789,6 +807,9 @@ def parse_agent(filename, tokens, log, included_files, directive=None):
             log.error("unexpected token: '%s'", tok.lexeme, loc=tok.loc)
 
 
+agentspeak.parser.parse_agent = parse_agent
+
+
 class ConstFoldVisitor(object):
     def __init__(self, log):
         self.log = log
@@ -895,6 +916,9 @@ class ConstFoldVisitor(object):
         ast_literal.annotations = [annotation.accept(
             term_visitor) for annotation in ast_literal.annotations]
         return ast_literal
+
+
+agentspeak.parser.ConstFoldVisitor = ConstFoldVisitor
 
 
 if __name__ == "__main__":
