@@ -36,6 +36,7 @@ from agentspeak.lexer import tokenize, TokenStream, main, repl
 class Token(object):
     def __init__(self, regex,
                  space=False, comment=False,
+                 concern=False, personality=False, others=False,
                  functor=False, numeric=False, variable=False, string=False,
                  boolean=None,
                  trigger=None, goal_type=None, formula_type=None,
@@ -44,6 +45,10 @@ class Token(object):
 
         self.space = space
         self.comment = comment
+
+        self.concern = concern
+        self.personality = personality
+        self.others = others
 
         self.functor = functor
         self.numeric = numeric
@@ -61,18 +66,17 @@ class Token(object):
         self.add_op = add_op
         self.comp_op = comp_op
 
-
+agentspeak.lexer.Token = Token
 TokenInfo = collections.namedtuple("TokenInfo", "lexeme token loc")
 
 
 class TokenType(enum.Enum):
     __order__ = """
-                personality
-                others
                 space comment
                 paren_open paren_close
                 bracket_open bracket_close
                 brace_open brace_close concern
+                personality others
                 functor numeric variable string
                 lit_true lit_false
                 tok_if tok_else tok_while tok_for
@@ -85,9 +89,7 @@ class TokenType(enum.Enum):
                 fullstop comma semicolon at
                 """
 
-    personality = Token(r"personality__")
-
-    others = Token(r"others__")
+    
 
     space = Token(r"\s+", space=True)
     comment = Token(r"(//|#).*", comment=True)
@@ -100,7 +102,12 @@ class TokenType(enum.Enum):
 
     brace_open = Token(r"{")
     brace_close = Token(r"}")
-    concern = Token(r"concern__")
+
+    concern = Token(r"concern__", concern=True)
+
+    personality = Token(r"personality__", personality=True)
+
+    others = Token(r"others__", others=True)
 
     functor = Token(
         r"(~?(?!(true|false|not|div|mod|if|else|while|for|include|begin|end)($|[^a-zA-Z0-9_]))((\.?[a-z][a-zA-Z0-9_]*)+))", functor=True)
@@ -161,6 +168,7 @@ class TokenType(enum.Enum):
     semicolon = Token(r";")
     at = Token(r"@")
 
+agentspeak.lexer.TokenType = TokenType
 
 RE_START_COMMENT = re.compile(r"/\*")
 RE_END_COMMENT = re.compile(r".*?\*/")

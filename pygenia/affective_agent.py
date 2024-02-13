@@ -321,6 +321,8 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         self.fulfilledExpectations = []
         self.notFulfilledExpectations = []
 
+        self.AfE = []
+
     def initAffectiveThreshold(self):
         """
         This method is used to initialize the affective thresholds of the agent.
@@ -715,7 +717,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         - Select Coping Strategy
         - Coping
         """
-
+        
         options = {
             "Appr": self.applyAppraisal,
             "UpAs": self.applyUpdateAffState,
@@ -942,7 +944,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         """
         This method is used to apply the appraisal process.
         """
-
         ped = PairEventDesirability(None)
         if True:  # while self.lock instead of True for the real implementation
             if self.event_queue:
@@ -1062,7 +1063,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             if calculated_as != None:
                 # PAD current_as = (PAD) getAS();
                 current_as = self.Ta["mood"]
-
+               
                 tmpVal = None
                 vDiff_P = None
                 vDiff_A = None
@@ -1136,7 +1137,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         result = []
         matches = True
         r = None
-
         for acl in self.affective_categories.keys():
             matches = True
             if self.affective_categories[acl] != None:
@@ -1162,6 +1162,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             PAD: Affective state.
         """
         em = []
+       
         if self.Ta["Av"]["expectedness"] != None and self.Ta["Av"]["expectedness"] < 0:
             em.append("surprise")
         if self.Ta["Av"]["desirability"] != None and self.Ta["Av"]["likelihood"] != None:
@@ -1181,6 +1182,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         result.setP(0.0)
         result.setA(0.0)
         result.setD(0.0)
+
         for e in em:
             if e == "anger":
                 result.setP(result.getP()-0.51)
@@ -1309,6 +1311,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             if self.intention_selected.instr.f(self, self.intention_selected):
                 # We set the intention.instr to the instr.success
                 self.intention_selected.instr = self.intention_selected.instr.success
+                
             else:
                 # We set the intention.instr to the instr.failure
                 self.intention_selected.instr = self.intention_selected.instr.failure
@@ -1472,7 +1475,7 @@ class Environment(agentspeak.runtime.Environment):
             str_body = str(ast_plan.body)
 
             plan = agentspeak.runtime.Plan(
-                ast_plan.event.trigger, ast_plan.event.goal_type, head, context, body, ast_plan.body, ast_plan.annotations)
+                ast_plan.event.trigger, ast_plan.event.goal_type, head, context, body, ast_plan.body, ast_plan.annotation)
 
             if ast_plan.args[0] is not None:
                 plan.args[0] = ast_plan.args[0]

@@ -160,8 +160,8 @@ class AstProb(AstNode):
 class AstPlan(AstNode):
     def __init__(self):
         super(AstPlan, self).__init__()
-        self.annotations = None
-        self.dict_annotations = None
+        self.annotation = None
+        self.annotation_terms = None
         self.event = None
         self.context = None
         self.body = None
@@ -176,7 +176,7 @@ class AstPlan(AstNode):
     def __str__(self):
         builder = []
 
-        if self.annotations is not None:
+        if self.annotation is not None:
             builder.append("@")
             builder.append(str(self.annotation))
             builder.append("\n")
@@ -397,17 +397,16 @@ def parse_personality(tok, tokens, log):
     personality.loc = tok.loc
 
     tok = next(tokens)
-
     if tok.lexeme == ":":
         tok = next(tokens)
     else:
         raise log.error("expected :, got '%s'", tok.lexeme, loc=tok.loc)
-
+    
     if tok.lexeme != "{":
         raise log.error("expected {, got '%s'", tok.lexeme, loc=tok.loc)
-
+    
     personality.traits = parse_personality_traits_array(tok, tokens, log)
-
+    
     tok = next(tokens)
 
     if tok.lexeme == ",":
@@ -430,13 +429,14 @@ def parse_personality(tok, tokens, log):
 
 def parse_personality_traits_array(tok, tokens, log):
     traits = {}
-
+    
     tok = next(tokens)
-
+    
     if tok.lexeme != "[":
         raise log.error("expected [, got '%s'", tok.lexeme, loc=tok.loc)
-
+    
     tok = next(tokens)
+    
     while tok.lexeme != "]":
         tok, trait, value = parse_personality_trait(tok, tokens, log)
         traits[trait] = value
@@ -449,7 +449,7 @@ def parse_personality_traits_array(tok, tokens, log):
 def parse_personality_trait(tok, tokens, log):
     trait = tok.lexeme
     tok = next(tokens)
-
+    
     if tok.lexeme != ":":
         raise log.error("expected :, got '%s'", tok.lexeme, loc=tok.loc)
 
@@ -469,91 +469,128 @@ def parse_personality_trait(tok, tokens, log):
 def parse_others(tok, tokens, log):
     others = AstOthers()
     others.loc = tok.loc
-
+    #id = ''
     tok = next(tokens)
-
     if tok.lexeme == ":":
         tok = next(tokens)
     else:
         raise log.error("expected :, got '%s'", tok.lexeme, loc=tok.loc)
+    
+    tok, others.other_agents = parse_others_list(tok, tokens, log)
 
-    if tok.lexeme == "{":
+    '''if tok.lexeme == "{":
         tok = next(tokens)
     else:
         raise log.error("expected {, got '%s'", tok.lexeme, loc=tok.loc)
-
-    tok, others.other_agents = parse_others_array(tok, tokens, log)
-
+    
+    if tok.token.functor:
+        id = tok.lexeme
+        others.other_agents.setdefault(id,[])
+        tok = next(tokens)
+    else: 
+        raise log.error("expected functor, got '%s'", tok.lexeme, loc=tok.loc)
+    
+    if tok.lexeme == ":":
+        tok = next(tokens)
+    else:
+        raise log.error("expected :, got '%s'", tok.lexeme, loc=tok.loc)
+    
+    tok, others.other_agents[id] = parse_others_array(tok, tokens, log)
+    
     if tok.lexeme != "}":
-        raise log.error("expected }, got '%s'", tok.lexeme, loc=tok.loc)
+        raise log.error("expected }, got '%s'", tok.lexeme, loc=tok.loc)'''
 
     tok = next(tokens)
 
     return tok, others
 
-
-def parse_others_array(tok, tokens, log):
-    others_array = []
-
-    if tok.lexeme == "[":
+def parse_others_list(tok, tokens, log):
+    others_list = {}
+    if tok.lexeme == "{":
         tok = next(tokens)
     else:
-        raise log.error("expected [, got '%s'", tok.lexeme, loc=tok.loc)
-
-    while tok.lexeme != "]":
-        tok, other_agent = parse_other_agent(tok, tokens, log)
-        others_array.append(other_agent)
-        if tok.lexeme == ",":
-            tok = next(tokens)
-
-    tok = next(tokens)
-    return tok, others_array
-
-
-def parse_other_agent(tok, tokens, log):
-    other_agent = AstOtherAgent()
-
-    other_agent.name = tok.lexeme
-
-    tok = next(tokens)
-
+        raise log.error("expected {, got '%s'", tok.lexeme, loc=tok.loc)
+    
+    if tok.lexeme == "}":
+        return tok, others_list
+    
+    if tok.token.functor:
+        id = tok.lexeme
+        others_list.setdefault(id,[])
+        tok = next(tokens)
+    else: 
+        raise log.error("expected functor, got '%s'", tok.lexeme, loc=tok.loc)
+    
     if tok.lexeme == ":":
         tok = next(tokens)
     else:
         raise log.error("expected :, got '%s'", tok.lexeme, loc=tok.loc)
+    
+    tok, others_list[id] = parse_others_array(tok, tokens, log)
+
+    while tok.lexeme != "}":
+        if tok.lexeme == ",":
+            tok = next(tokens)
+        else:
+            raise log.error("expected ',', got '%s'", tok.lexeme, loc=tok.loc)
+
+        if tok.token.functor:
+            id = tok.lexeme
+            others_list.setdefault(id,[])
+            tok = next(tokens)
+        else: 
+            raise log.error("expected functor, got '%s'", tok.lexeme, loc=tok.loc)
+        
+        if tok.lexeme == ":":
+            tok = next(tokens)
+        else:
+            raise log.error("expected :, got '%s'", tok.lexeme, loc=tok.loc)
+        
+        tok, others_list[id] = parse_others_array(tok, tokens, log)
+
+
+
+    return tok, others_list
+
+
+def parse_others_array(tok, tokens, log):
+    others_array = {}
 
     if tok.lexeme == "[":
         tok = next(tokens)
     else:
         raise log.error("expected [, got '%s'", tok.lexeme, loc=tok.loc)
-
-    tok, agent_information = parse_other_agent_information(tok, tokens, log)
-    other_agent.information = agent_information
-
-    return tok, other_agent
-
-
-def parse_other_agent_information(tok, tokens, log):
-    agent_information = {}
-
+    
+    tok, id, value = parse_other_parameters(tok, tokens, log)
+    others_array.setdefault(id,value)
+    
     while tok.lexeme != "]":
-        type_information = tok.lexeme
-        tok = next(tokens)
-
-        if tok.lexeme == ":":
-            tok = next(tokens)
-        else:
-            raise log.error("expected :, got '%s'", tok.lexeme, loc=tok.loc)
-
-        tok, value = parse_arith_expr(tok, tokens, log)
-
-        agent_information[type_information] = value
-
         if tok.lexeme == ",":
             tok = next(tokens)
+        else:
+            raise log.error("expected ',', got '%s'", tok.lexeme, loc=tok.loc)
 
+        tok, id, value = parse_other_parameters(tok, tokens, log)
+        others_array.setdefault(id,value)
+    
     tok = next(tokens)
-    return tok, agent_information
+    return tok, others_array
+
+def parse_other_parameters(tok, tokens, log):
+    if tok.token.functor:
+        id = tok.lexeme
+        tok = next(tokens)
+    else: 
+        raise log.error("expected functor, got '%s'", tok.lexeme, loc=tok.loc)
+    
+    if tok.lexeme == ":":
+        tok = next(tokens)
+    else:
+        raise log.error("expected :, got '%s'", tok.lexeme, loc=tok.loc)
+    
+    tok, value = parse_arith_expr(tok, tokens, log)
+
+    return tok, id, value
 
 
 def parse_plan(tok, tokens, log):
@@ -562,11 +599,8 @@ def parse_plan(tok, tokens, log):
         tok = next(tokens)
 
         tok, annotation = parse_literal(tok, tokens, log)
-        plan.annotations = annotation
-        plan.dict_annotations = {annotation.functor: {
-            annotation.annotations[i].functor: [str(annotation.annotations[i].terms[j]) for j in
-                                                range(len(annotation.annotations[i].terms))] for i in
-            range(len(annotation.annotations))}}
+        plan.annotation = annotation
+        plan.annotation_terms = annotation.annotations
 
     tok, event = parse_event(tok, tokens, log)
     plan.event = event
@@ -625,7 +659,7 @@ class AstPersonality(AstNode):
 class AstOthers(AstNode):
     def __init__(self):
         super(AstOthers, self).__init__()
-        self.other_agents = []
+        self.other_agents = {}
 
     def accept(self, visitor):
         return visitor.visit_others(self)
@@ -673,7 +707,7 @@ def parse_agent(filename, tokens, log, included_files, directive=None):
                 raise log.error(
                     "end of file, but did not close directive '%s'", directive)
             return validate(agent, log)
-
+        
         if tok.lexeme == "{":
             tok = next(tokens)
             if tok.lexeme == "include":
@@ -750,7 +784,26 @@ def parse_agent(filename, tokens, log, included_files, directive=None):
             else:
                 raise log.error(
                     "expected 'include', or 'begin' or 'end' after '{', got '%s'", tok.lexeme, loc=tok.loc)
-
+        # TK CONCERN
+        elif tok.token.concern:
+            tok, ast_node = parse_concern(tok, tokens, log)
+            if isinstance(ast_node, AstConcern):
+                if tok.lexeme != ".":
+                    log.info("missing '.' after this concern",
+                             loc=ast_node.loc)
+                    raise log.error("expected '.' after concern, got '%s'", tok.lexeme, loc=tok.loc,
+                                    extra_locs=[ast_node.loc])
+                agent.concerns.append(ast_node)
+        elif tok.token.personality:
+            # TK PERSONALITY
+            tok, ast_node = parse_personality(tok, tokens, log)
+            if isinstance(ast_node, AstPersonality):
+                agent.personality = ast_node
+        elif tok.token.others:
+            # TK OTHERS
+            tok, ast_node = parse_others(tok, tokens, log)
+            if isinstance(ast_node, AstOthers):
+                agent.others = ast_node
         elif tok.token.functor:
             if last_plan is not None:
                 log.warning("assertion after plan. should this have been part of '%s'?", last_plan.signature(),
@@ -783,26 +836,6 @@ def parse_agent(filename, tokens, log, included_files, directive=None):
                 raise log.error("expected '.' after plan, got '%s'", tok.lexeme, loc=tok.loc,
                                 extra_locs=[last_plan.loc])
             agent.plans.append(last_plan)
-        elif tok.lexeme == "concern__":
-            # TK CONCERN
-            tok, ast_node = parse_concern(tok, tokens, log)
-            if isinstance(ast_node, AstConcern):
-                if tok.lexeme != ".":
-                    log.info("missing '.' after this concern",
-                             loc=ast_node.loc)
-                    raise log.error("expected '.' after concern, got '%s'", tok.lexeme, loc=tok.loc,
-                                    extra_locs=[ast_node.loc])
-                agent.concerns.append(ast_node)
-        elif tok.lexeme == "personality__":
-            # TK PERSONALITY
-            tok, ast_node = parse_personality(tok, tokens, log)
-            if isinstance(ast_node, AstPersonality):
-                agent.personality = ast_node
-        elif tok.lexeme == "others__":
-            # TK OTHERS
-            tok, ast_node = parse_others(tok, tokens, log)
-            if isinstance(ast_node, AstOthers):
-                agent.others = ast_node
         else:
             log.error("unexpected token: '%s'", tok.lexeme, loc=tok.loc)
 
@@ -858,8 +891,8 @@ class ConstFoldVisitor(object):
         return ast_event
 
     def visit_plan(self, ast_plan):
-        if ast_plan.annotations is not None:
-            ast_plan.annotations = ast_plan.annotations.accept(
+        if ast_plan.annotation is not None:
+            ast_plan.annotation = ast_plan.annotation.accept(
                 TermFoldVisitor(self.log))
 
         ast_plan.event = ast_plan.event.accept(self)
