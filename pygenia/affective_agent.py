@@ -28,6 +28,7 @@ from pygenia.utils import (
 )
 from pygenia.emotional_engine.as_utils import TemporalAffectiveInformation
 from pygenia.affective_state.pad import PAD
+from pygenia.emotional_engine.default_engine import DefaultEngine
 
 LOGGER = agentspeak.get_logger(__name__)
 C = {}
@@ -119,6 +120,8 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         # Temporal information of the affective cycle definition
         self.Ta = TemporalAffectiveInformation()
 
+        self.emotional_engine = DefaultEngine()
+
         # This is an example of the use of affective categories:
         self.affective_categories = {
             "neutral": [
@@ -134,10 +137,10 @@ class AffectiveAgent(agentspeak.runtime.Agent):
 
         # self.initAffectiveThreshold()
 
-        self.fulfilledExpectations = []
-        self.notFulfilledExpectations = []
+        # self.fulfilledExpectations = []
+        # self.notFulfilledExpectations = []
 
-        self.AfE = []
+        # self.AfE = []
 
     def add_concern(self, concern):
         """
@@ -186,6 +189,13 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         calling_intention: agentspeak.runtime.Intention,
         delayed: bool = False,
     ):
+        self.emotional_engine.call(
+            trigger,
+            goal_type,
+            term,
+            calling_intention,
+            delayed,
+        )
         """This method is used to call an event.
 
         Args:
@@ -214,8 +224,8 @@ class AffectiveAgent(agentspeak.runtime.Agent):
 
         If the event is a tellHow deletion, we remove the tellHow from the agent.
 
-        If the event is a askHow addition, we ask the agent how to do it.
-        """
+        If the event is a askHow addition, we ask the agent how to do it."""
+
         # Modify beliefs.
         if goal_type == agentspeak.GoalType.belief:
             # We recieve a belief and the affective cycle is activated.
