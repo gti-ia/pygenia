@@ -20,7 +20,8 @@ from pygenia.utils import (
     BuildQueryVisitor,
     TrueQuery,
 )
-from pygenia.affective_agent import Concern, AffectiveAgent
+from pygenia.affective_agent import AffectiveAgent
+from pygenia.cognitive_engine.default_engine import Concern
 
 LOGGER = agentspeak.get_logger(__name__)
 C = {}
@@ -139,12 +140,21 @@ class Environment(agentspeak.runtime.Environment):
 
         for ast_goal in ast_agent.goals:
             # Start the first part of the reasoning cycle.
-            agent.current_step = "SelEv"
+            if agent_cls == agentspeak.runtime.Agent:
+                agent.current_step = "SelEv"
+            else:
+                agent.rational_cycle.set_current_step("SelEv")
             term = ast_goal.atom.accept(agentspeak.runtime.BuildTermVisitor({}))
             f_event = agentspeak.runtime.Event(
                 agentspeak.Trigger.addition, agentspeak.GoalType.achievement, term
             )
-            agent.C["E"] = [f_event] if "E" not in agent.C else agent.C["E"] + [f_event]
+            if agent_cls == agentspeak.runtime.Agent:
+                agent.C["E"] = (
+                    [f_event] if "E" not in agent.C else agent.C["E"] + [f_event]
+                )
+            else:
+                agent.circumstance.add_event(f_event)
+                # [f_event] if "E" not in agent.C else agent.C["E"] + [f_event]
 
         # Add rules to agent prototype.
         for concern in ast_agent.concerns:
@@ -155,7 +165,7 @@ class Environment(agentspeak.runtime.Environment):
             )
             concern = Concern(head, consequence)
             agent.add_concern(concern)
-            concern_value = agent.test_concern(
+            concern_value = agent.emotional_engine.test_concern(
                 head, agentspeak.runtime.Intention(), concern
             )
 

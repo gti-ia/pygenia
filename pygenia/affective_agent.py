@@ -26,9 +26,11 @@ from pygenia.utils import (
     BuildInstructionsVisitor,
     BuildQueryVisitor,
 )
-from pygenia.emotional_engine.as_utils import TemporalAffectiveInformation
+from pygenia.cognitive_engine.termporal_information import TemporalAffectiveInformation
 from pygenia.affective_state.pad import PAD
-from pygenia.emotional_engine.default_engine import DefaultEngine
+from pygenia.cognitive_engine.default_engine import DefaultEngine
+from pygenia.cognitive_engine.circumstance import Circumstance
+from pygenia.cognitive_engine.rational_processes import RationalCycle
 
 LOGGER = agentspeak.get_logger(__name__)
 C = {}
@@ -101,29 +103,40 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         """
         super(AffectiveAgent, self).__init__(env, name, beliefs, rules, plans)
 
-        self.current_step = ""
+        self.emotional_engine = DefaultEngine(agent=self)
+
+        self.rational_cycle = RationalCycle(agent=self)
+
+        # Circunstance definition
+        # self.C = {"I": collections.deque(), "E": [], "A": []}
+        self.circumstance = Circumstance()
+
+        self.emotional_engine.set_circumstance(self.circumstance)
+        self.rational_cycle.set_circumstance(self.circumstance)
 
         self.personality = pygenia.personality.personality.Personality()
 
         # Concerns definition
-        self.Cc = collections.defaultdict(lambda: []) if concerns is None else concerns
-
-        # Circunstance definition
-        self.C = {"I": collections.deque(), "E": [], "A": []}
+        self.concerns = (
+            collections.defaultdict(lambda: []) if concerns is None else concerns
+        )
+        # CHECK TODO set the concerns of default engine to this concerns
+        self.emotional_engine.set_concerns(self.concerns)
 
         # Temporary information of the current rational cycle definition
-        self.T = {"p": None, "Ap": [], "i": None, "R": [], "e": None}
+        """self.T = {
+            "applicable_plan": None,
+            "applicable_plans": [],
+            "intention": None,
+            "relevant_plans": [],
+            "event": None,
+        }"""
 
         # Affective memory definition (⟨event 𝜀, affective value av⟩)
         self.Mem = []
 
-        # Temporal information of the affective cycle definition
-        self.Ta = TemporalAffectiveInformation()
-
-        self.emotional_engine = DefaultEngine()
-
         # This is an example of the use of affective categories:
-        self.affective_categories = {
+        """self.affective_categories = {
             "neutral": [
                 [-0.3, 0.3],
                 [-0.3, 0.3],
@@ -131,55 +144,22 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             ],
             "happy": [[0, 1], [0, 1], [-1, 1]],
             "sad": [[-1, 0], [-1, 0], [-1, 1]],
-        }
+        }"""
 
         self.event_queue = []
+        # TODO set the event_queue of default engine to this queue
+        self.emotional_engine.set_event_queue(self.event_queue)
 
         # self.initAffectiveThreshold()
 
         # self.fulfilledExpectations = []
         # self.notFulfilledExpectations = []
 
-        # self.AfE = []
+        self.affective_categories = []
 
-    def add_concern(self, concern):
-        """
-        This method is used to add a concern to the agent.
+        self.emotional_engine.set_affective_categories(self.affective_categories)
 
-        Args:
-            concern (Concern): Concern to be added.
-        """
-        self.Cc[(concern.head.functor, len(concern.head.args))].append(concern)
-
-    def test_concern(self, term, intention, concern):
-        """This function is used to know the value of a concern
-
-        Args:
-            term (Literal): Term of the concern
-            intention (Intention): Intention of the agent
-            concern (Concern): Concern of the agent
-
-        Raises:
-            AslError:  If the term is not a Literal
-
-        Returns:
-            OR[bool, str]: If the concern is not found, return False. If the concern is found, return the value of the concern
-        """
-        term = agentspeak.evaluate(term, intention.scope)
-
-        if not isinstance(term, agentspeak.Literal):
-            raise AslError("expected concern literal, got: '%s'" % term)
-
-        query = TermQuery(term)
-
-        try:
-            next(query.execute_concern(self, intention, concern))
-            concern_value = " ".join(
-                asl_str(agentspeak.freeze(t, intention.scope, {})) for t in term.args
-            )
-            return concern_value
-        except StopIteration:
-            return False
+        self.rational_cycle.set_affective_categories(self.affective_categories)
 
     def call(
         self,
@@ -189,13 +169,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         calling_intention: agentspeak.runtime.Intention,
         delayed: bool = False,
     ):
-        self.emotional_engine.call(
-            trigger,
-            goal_type,
-            term,
-            calling_intention,
-            delayed,
-        )
         """This method is used to call an event.
 
         Args:
@@ -224,8 +197,8 @@ class AffectiveAgent(agentspeak.runtime.Agent):
 
         If the event is a tellHow deletion, we remove the tellHow from the agent.
 
-        If the event is a askHow addition, we ask the agent how to do it."""
-
+        If the event is a askHow addition, we ask the agent how to do it.
+        """
         # Modify beliefs.
         if goal_type == agentspeak.GoalType.belief:
             # We recieve a belief and the affective cycle is activated.
@@ -246,7 +219,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             raise AslError("expected literal")
 
         # Wake up waiting intentions.
-        for intention_stack in self.C["I"]:
+        for intention_stack in self.circumstance.get_intentions():
             if not intention_stack:
                 continue
             intention = intention_stack[-1]
@@ -270,7 +243,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                 raise AslError("expected literal term")
 
             # Remove a intention passed by the parameters.
-            for intention_stack in self.C["I"]:
+            for intention_stack in self.circunstance.get_intentions():
                 if not intention_stack:
                     continue
 
@@ -379,13 +352,18 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                 plan.remove(differents)
             return True
 
-        self.C["E"] = (
+        """self.circunstance["E"] = (
             [agentspeak.runtime.Event(trigger, goal_type, term)]
-            if "E" not in self.C
-            else self.C["E"] + [agentspeak.runtime.Event(trigger, goal_type, term)]
-        )
-        self.current_step = "SelEv"
-        self.applySemanticRuleDeliberate(delayed, calling_intention)
+            if "E" not in self.circunstance
+            else self.circunstance["E"]
+            + [agentspeak.runtime.Event(trigger, goal_type, term)]
+        )"""
+        current_event = agentspeak.runtime.Event(trigger, goal_type, term)
+        self.circumstance.add_event(current_event)
+        self.rational_cycle.set_current_step("SelEv")
+        # self.current_step = "SelEv"
+        # self.applySemanticRuleDeliberate(delayed, calling_intention)
+        self.rational_cycle.applySemanticRuleDeliberate(delayed, calling_intention)
 
         # if goal_type == agentspeak.GoalType.achievement and trigger == agentspeak.Trigger.addition:
         #    raise AslError("no applicable plan for %s%s%s/%d" % (
@@ -394,400 +372,14 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         #    return self.test_belief(term, calling_intention)
         return True
 
-    def applySelEv(self) -> bool:
+    def add_concern(self, concern):
         """
-        This method is used to select the event that will be executed in the next step
-
-        Returns:
-            bool: True if the event was selected
-        """
-
-        # self.term = self.ast_goal.atom.accept(agentspeak.runtime.BuildTermVisitor({}))
-        if "E" in self.C and len(self.C["E"]) > 0:
-            # Select one event from the list of events and remove it from the list without using pop
-            self.T["e"] = self.C["E"][0]
-            self.C["E"] = self.C["E"][1:]
-            self.frozen = agentspeak.freeze(
-                self.T["e"].head, agentspeak.runtime.Intention().scope, {}
-            )
-            self.T["i"] = agentspeak.runtime.Intention()
-            self.current_step = "RelPl"
-        else:
-            self.current_step = "SelEv"
-            return False
-
-        return True
-
-    def applyRelPl(self) -> bool:
-        """
-        This method is used to find the plans that are related to the current goal.
-        We say that a plan is related to a goal if both have the same functor
-
-        Returns:
-            bool: True if the plans were found, False otherwise
-
-        - If the plans were found, the dictionary T["R"] will be filled with the plans found and the current step will be changed to "AppPl"
-        - If not plans were found, the current step will be changed to "SelEv" to select a new event
-        """
-
-        RelPlan = collections.defaultdict(lambda: [])
-        plans = self.plans.values()
-        for plan in plans:
-            for differents in plan:
-                if self.T["e"].head.functor in differents.head.functor:
-                    RelPlan[
-                        (
-                            differents.trigger,
-                            differents.goal_type,
-                            differents.head.functor,
-                            len(differents.head.args),
-                        )
-                    ].append(differents)
-
-        if not RelPlan:
-            self.current_step = "SelEv"
-            return False
-        self.T["R"] = RelPlan
-        self.current_step = "AppPl"
-        return True
-
-    def check_affect(self, plan):
-        # Return True if the plan has no annotation
-        if plan.annotation is None:
-            return True
-        else:
-            # Returns True if the plan has required affect states and the agent's current affect state match any of them
-            for a in plan.annotation.annotations:
-                if a.functor == "affect__":
-                    for t in a.terms:
-                        if str(t) in self.AfE:
-                            return True
-
-            # Returns False if the agent's current affect does not match any of the required affect states
-            return False
-
-    def applyAppPl(self) -> bool:
-        """
-        This method is used to find the plans that are applicable to the current goal.
-        We say that a plan is applicable to a goal if both have the same functor,
-        the same number of arguments and the context are satisfied
-
-        Returns:
-            bool: True if the plans were found, False otherwise
-
-        - The dictionary T["Ap"] will be filled with:
-            + The plans that do not require a specific affective state
-            + The plans whose required affective state matches that of the agent
-        - The current step will be changed to "SelAppl"
-        - If not applicable plans were found, return False
-        """
-        plans_list = self.T["R"][
-            (
-                self.T["e"].trigger,
-                self.T["e"].goal_type,
-                self.frozen.functor,
-                len(self.frozen.args),
-            )
-        ]
-
-        self.T["Ap"] = [plan for plan in plans_list if self.check_affect(plan)]
-
-        self.current_step = "SelAppl"
-
-        return self.T["Ap"] != []
-
-    def applySelAppl(self) -> bool:
-        """
-        This method is used to select the plan that is applicable to the current goal.
-        We say that a plan is applicable to a goal if both have the same functor,
-        the same number of arguments and the context are satisfied
-
-        We select the first plan that is applicable to the goal in the dict of
-        applicable plans
-
-        Returns:
-            bool: True if the plan was found, False otherwise
-
-        - If the plan was found, the dictionary T["p"] will be filled with the plan found and the current step will be changed to "AddIM"
-        - If not plan was found, return False
-        """
-        for plan in self.T["Ap"]:
-            for _ in agentspeak.unify_annotated(
-                plan.head, self.frozen, self.T["i"].scope, self.T["i"].stack
-            ):
-                for _ in plan.context.execute(self, self.T["i"]):
-                    self.T["p"] = plan
-                    self.current_step = "AddIM"
-                    return True
-        return False
-
-    def applyAddIM(self, delayed, calling_intention) -> bool:
-        """
-        This method is used to add the intention to the intention stack of the agent
-
-        Returns:
-            bool: True if the intention is added to the intention stack
-
-        - When  the intention is added to the intention stack, the current step will be changed to "SelEv"
-        """
-        self.T["i"].head_term = self.frozen
-        self.T["i"].instr = self.T["p"].body
-        self.T["i"].calling_term = self.T["e"].head
-
-        if not delayed and self.C["I"]:
-            for intention_stack in self.C["I"]:
-                if intention_stack[-1] == calling_intention:
-                    intention_stack.append(self.T["i"])
-                    return False
-        new_intention_stack = collections.deque()
-        new_intention_stack.append(self.T["i"])
-
-        # Add the event and the intention to the Circumstance
-        self.C["I"].append(new_intention_stack)
-
-        self.current_step = "SelInt"
-        return True
-
-    def applySemanticRuleDeliberate(
-        self, delayed=False, calling_intention=agentspeak.runtime.Intention
-    ):
-        """
-        This method is used to apply the first part of the reasoning cycle.
-        This part consists of the following steps:
-        - Select an event
-        - Find the plans that are related to the event
-        - Find the plans that are applicable to the event
-        - Select the plan that is applicable to the event
-        - Add the intention to the intention stack of the agent
-        """
-        options = {
-            "SelEv": self.applySelEv,
-            "RelPl": self.applyRelPl,
-            "AppPl": self.applyAppPl,
-            "SelAppl": self.applySelAppl,
-            "AddIM": self.applyAddIM,
-        }
-
-        flag = True
-        while flag == True and self.current_step in options:
-            if self.current_step == "AddIM":
-                flag = options[self.current_step](delayed, calling_intention)
-            else:
-                flag = options[self.current_step]()
-
-        return True
-
-    def affectiveTransitionSystem(self):
-        """
-        This method is used to apply the second part of the reasoning cycle.
-        This part consists of the following steps:
-        - Appraisal
-        - Update Aff State
-        - Select Coping Strategy
-        - Coping
-        """
-
-        options = {
-            "Appr": self.applyAppraisal,
-            "UpAs": self.applyUpdateAffState,
-            "SelCs": self.applySelectCopingStrategy,
-            "Cope": self.applyCope,
-        }
-
-        flag = True
-        while flag == True and self.current_step_ast in options:
-            flag = options[self.current_step_ast]()
-
-        return True
-
-    def appraisal(self, event, concern_value):
-        """
-        This method is used to apply the appraisal process.
+        This method is used to add a concern to the agent.
 
         Args:
-            event (tuple): Event to be appraised.
-            concern_value (float): Concern value of the event.
-
-        Returns:
-            bool: True if the event was appraised, False otherwise.
+            concern (Concern): Concern to be added.
         """
-        selectingCs = True
-        result = False
-        if event != None:
-            # Calculating desirability
-            if len(self.Cc):
-                desirability = self.desirability(event)
-                self.Ta.get_appraisal_variables()["desirability"] = desirability
-
-            # Calculating likelihood.
-            likelihood = self.likelihood(event)
-            self.Ta.get_appraisal_variables()["likelihood"] = likelihood
-
-            # Calculating causal attribution
-            causal_attribution = self.causalAttribution(event)
-            self.Ta.get_appraisal_variables()["causal_attribution"] = causal_attribution
-
-            # Calculating controllability:
-            if len(self.Cc):
-                controllability = self.controllability(
-                    event, concern_value, desirability
-                )
-                self.Ta.get_appraisal_variables()["controllability"] = controllability
-                pass
-            result = True
-        else:
-            self.Ta.get_appraisal_variables()["desirability"] = None
-            self.Ta.get_appraisal_variables()["expectedness"] = None
-            self.Ta.get_appraisal_variables()["likelihood"] = None
-            self.Ta.get_appraisal_variables()["causal_attribution"] = None
-            self.Ta.get_appraisal_variables()["controllability"] = None
-        return result
-
-    def controllability(self, event, concernsValue, desirability):
-        """
-        This method is used to calculate the controllability of the event.
-
-        Args:
-            event (tuple): Event to be appraised.
-            concernsValue (float): Concern value of the event.
-            desirability (float): Desirability of the event.
-
-        Returns:
-            float: Controllability of the event.
-        """
-        result = None
-        if desirability != None and concernsValue != None:
-            result = desirability - concernsValue
-            result = (result + 1) / 2
-        return result
-
-    def causalAttribution(self, event):
-        """
-        This method is used to calculate the causal attribution of the event.
-
-        Args:
-            event (tuple): Event to be appraised.
-
-        Returns:
-            str: Causal attribution of the event.
-        """
-        ca = None
-        if any([annotation.functor == "source" for annotation in event[0].annots]):
-            ca = "other"
-        else:
-            ca = "self"
-        return ca
-
-    def likelihood(self, event):
-        """
-        This method is used to calculate the likelihood of the event.
-
-        Args:
-            event (tuple): Event to be appraised.
-
-        Returns:
-            float: Likelihood of the event.
-        """
-        result = None
-        if event != None and event[1].name == "addition":
-            result = 1.0
-        return result
-
-    def expectedness(self, event, remove):
-        """
-        This method is used to calculate the expectedness of the event.
-
-        Args:
-            event (tuple): Event to be appraised.
-            remove (bool): True if the event is removed, False otherwise.
-
-        Returns:
-            float: Expectedness of the event.
-        """
-
-        result1 = None
-        result2 = None
-        result = None
-
-        if event != None:
-            index = self.fulfilledExpectations.index(event[0])
-            if index != -1:
-                result1 = self.fulfilledExpectations[index][1]
-                if remove:
-                    self.fulfilledExpectations.pop(index)
-            else:
-                index = self.notFulfilledExpectations.index(event[0])
-                if index != -1:
-                    result1 = -1 * self.notFulfilledExpectations[index][1]
-                    if remove:
-                        self.notFulfilledExpectations.pop(index)
-
-        # processing events that "didn't happen" and were expected in this affective cycle
-        # Averaging negative expectedness and removing this value from the previous result
-        av = 0
-        count = 0
-        for i in range(len(self.notFulfilledExpectations)):
-            av = av + self.notFulfilledExpectations[i][1]
-            count = count + 1
-        if remove:
-            self.notFulfilledExpectations = []
-        if count > 0:
-            result2 = av / count
-
-        if result1 != None and result2 != None:
-            result = max(-1, result1 - result2)
-
-        return result  # range [-1,1]
-
-    def desirability(self, event):
-        """
-        This method is used to calculate the desirability of the event.
-
-        Args:
-            event (tuple): Event to be appraised.
-
-        Returns:
-            float: Desirability of the event.
-        """
-        concernVal = None
-        # This function return the first concern of the agent
-        concern = self.Cc[("concern__", 1)][0]
-
-        if concern != None:
-            if event[1].name == "addition":
-                # adding the new literal if the event is an addition of a belief
-                concernVal = self.applyConcernForAddition(event, concern)
-            else:
-                concernVal = self.applyConcernForDeletion(event, concern)
-
-            if concernVal != None:
-                if float(concernVal) < 0 or float(concernVal) > 1:
-                    concernVal = 0
-
-        return float(concernVal)
-
-    def applyConcernForAddition(self, event, concern):
-        """
-        This method is used to apply the concern for the addition of a belief.
-
-        Args:
-            event (tuple): Event to be appraised.
-            concern (Concern): Concern to be applied.
-
-        Returns:
-            float: Concern value of the event.
-        """
-
-        # We add the new belief to the agent's belief base, so we can calculate the concern value
-        # self.add_belief(event[0], agentspeak.runtime.Intention().scope)
-        # We calculate the concern value
-        concern_value = self.test_concern(
-            concern.head, agentspeak.runtime.Intention(), concern
-        )
-        # We remove the belief from the agent's belief base again
-        # self.remove_belief(event[0], agentspeak.runtime.Intention())
-
-        return concern_value
+        self.concerns[(concern.head.functor, len(concern.head.args))].append(concern)
 
     def applyConcernForDeletion(self, event, concern):
         """
@@ -804,7 +396,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         # We remove the belief from the agent's belief base, so we can calculate the concern value
         # self.remove_belief(event[0], agentspeak.runtime.Intention())
         # We calculate the concern value
-        concern_value = self.test_concern(
+        concern_value = self.emotional_engine.test_concern(
             concern.head, agentspeak.runtime.Intention(), concern
         )
         # We add the belief to the agent's belief base again
@@ -812,457 +404,20 @@ class AffectiveAgent(agentspeak.runtime.Agent):
 
         return concern_value
 
-    def applyAppraisal(self) -> bool:
-        """
-        This method is used to apply the appraisal process.
-        """
-        ped = PairEventDesirability(None)
-        if True:  # while self.lock instead of True for the real implementation
-            if self.event_queue:
-                ped.event = self.event_queue.pop()
-
-        if ped.event == None:
-            self.appraisal(None, 0.0)
-            self.currentEvent = None
-            self.eventProcessedInCycle = False
-        else:
-            self.appraisal(ped.event, random.random())
-            self.currentEvent = ped.event
-            self.eventProcessedInCycle = True
-
-        if self.cleanAffectivelyRelevantEvents():
-            self.Mem = []
-
-        # The next step is Update Aff State
-        self.current_step_ast = "UpAs"
-        return True
-
-    def applyCope(self):
-        """
-        This method is used to apply the coping process.
-        """
-
-        SelectingCs = True
-        while SelectingCs and self.C["CS"]:
-            SelectingCs = self.cope()
-        # self.current_step_ast = "Appr"
-        return False
-
-    def cope(self):
-        """
-        This method is used to apply the coping process.
-
-        Returns:
-            bool: True if the coping strategy was applied, False otherwise.
-        """
-
-        if self.C["CS"]:
-            cs = self.C["CS"].pop(0)
-            self["CS"].append(cs)
+    def check_affect(self, plan):
+        # Return True if the plan has no annotation
+        if plan.annotation is None:
             return True
         else:
+            # Returns True if the plan has required affect states and the agent's current affect state match any of them
+            for a in plan.annotation.annotations:
+                if a.functor == "affect__":
+                    for t in a.terms:
+                        if str(t) in self.affective_categories:
+                            return True
+
+            # Returns False if the agent's current affect does not match any of the required affect states
             return False
-
-    def applySelectCopingStrategy(self):
-        """
-        This method is used to select the coping strategy.
-        Personality parser is not implemented yet.
-
-        Returns:
-            bool: True if the coping strategy was selected, False otherwise.
-        """
-        self.C["CS"] = []
-        # self.selectCs()
-        self.current_step_ast = "Cope"
-        return True
-
-    def selectCs(self):
-        """
-        This method is used to select the coping strategy.
-        """
-        """
-        AClabel = self.C["AfE"]
-        logCons = False
-        asContainsCs = False
-        if len(AClabel) != 0 and self.Ag["P"].getCopingStrategies() != None:
-            for cs in self.Ag["P"].getCopingStrategies():
-                if cs.getAffectCategory().name in AClabel:
-                    logCons = cs.getContext().logicalConsequence(self.ag).hasNext()
-                    if logCons:
-                        self.C["CS"].append(cs)
-                    asContainsCs = True
-            if asContainsCs:
-                self.C["AfE"] = []
-        """
-        pass
-
-    def applyUpdateAffState(self):
-        """
-        This method is used to update the affective state.
-        """
-        if self.eventProcessedInCycle:
-            self.UpdateAS()
-        if self.isAffectRelevantEvent(self.currentEvent):
-            self.Mem.append(self.currentEvent)
-        self.current_step_ast = "SelCs"
-        return True
-
-    def isAffectRelevantEvent(self, currentEvent):
-        """
-        This method is used to check if the event is affect relevant.
-
-        Args:
-            currentEvent (tuple): Event to be checked.
-
-        Returns:
-            bool: True if the event is affect relevant, False otherwise.
-        """
-        result = currentEvent != None
-
-        for ex in self.Ta.get_mood().affRevEventThreshold:
-            result = result and ex.evaluate(
-                self.Ta.get_mood().getP(),
-                self.Ta.get_mood().getA(),
-                self.Ta.get_mood().getD(),
-            )
-        return result
-
-    def UpdateAS(self):
-        """
-        This method is used to update the affective state.
-        """
-        self.DISPLACEMENT = 0.5
-        if isinstance(self.Ta.get_mood(), PAD):
-            pad = PAD()
-            calculated_as = self.deriveASFromAppraisalVariables()
-
-            if calculated_as != None:
-                # PAD current_as = (PAD) getAS();
-                current_as = self.Ta.get_mood()
-
-                tmpVal = None
-                vDiff_P = None
-                vDiff_A = None
-                vDiff_D = None
-                vectorToAdd_P = None
-                vectorToAdd_A = None
-                vectorToAdd_D = None
-                lengthToAdd = None
-                VEC = calculated_as
-
-                # Calculating the module of VEC
-                VECmodule = math.sqrt(
-                    math.pow(VEC.getP(), 2)
-                    + math.pow(VEC.getA(), 2)
-                    + math.pow(VEC.getD(), 2)
-                )
-
-                # 1 Applying the pull and push of ALMA
-                if PAD.betweenVECandCenter(current_as, VEC) or not PAD.sameOctant(
-                    current_as, VEC
-                ):
-                    vDiff_P = VEC.getP() - current_as.getP()
-                    vDiff_A = VEC.getA() - current_as.getA()
-                    vDiff_D = VEC.getD() - current_as.getD()
-                else:
-                    vDiff_P = current_as.getP() - VEC.getP()
-                    vDiff_A = current_as.getA() - VEC.getA()
-                    vDiff_D = current_as.getD() - VEC.getD()
-
-                # 2 The module of the vector VEC () is multiplied by the DISPLACEMENT and this
-                # is the length that will have the vector to be added to 'as'
-                lengthToAdd = VECmodule * self.DISPLACEMENT
-
-                # 3 Determining the vector to add
-                vectorToAdd_P = vDiff_P * self.DISPLACEMENT
-                vectorToAdd_A = vDiff_A * self.DISPLACEMENT
-                vectorToAdd_D = vDiff_D * self.DISPLACEMENT
-
-                # 4 The vector vectorToAdd is added to 'as' and this is the new value of
-                # the current affective state
-                tmpVal = current_as.getP() + vectorToAdd_P
-                if tmpVal > 1:
-                    tmpVal = 1.0
-                else:
-                    if tmpVal < -1:
-                        tmpVal = -1.0
-                pad.setP(round(tmpVal * 10.0) / 10.0)
-                tmpVal = current_as.getA() + vectorToAdd_A
-                if tmpVal > 1:
-                    tmpVal = 1.0
-                else:
-                    if tmpVal < -1:
-                        tmpVal = -1.0
-                pad.setA(round(tmpVal * 10.0) / 10.0)
-                tmpVal = current_as.getD() + vectorToAdd_D
-                if tmpVal > 1:
-                    tmpVal = 1.0
-                else:
-                    if tmpVal < -1:
-                        tmpVal = -1.0
-                pad.setD(round(tmpVal * 10.0) / 10.0)
-
-                self.Ta.set_mood(pad)
-                AClabel = self.getACLabel()
-                self.AfE = AClabel
-        pass
-
-    def getACLabel(self):
-        """
-        This method is used to get the affective category label.
-
-        Returns:
-            list: Affective category label.
-        """
-
-        result = []
-        matches = True
-        r = None
-        for acl in self.affective_categories.keys():
-            matches = True
-            if self.affective_categories[acl] != None:
-                if len(self.affective_categories[acl]) == len(
-                    self.Ta.get_mood().affectiveLabels
-                ):
-                    for i in range(len(self.Ta.get_mood().affectiveLabels)):
-                        r = self.affective_categories[acl][i]
-                        matches = (
-                            matches
-                            and self.Ta.get_mood().components[i] >= r[0]
-                            and self.Ta.get_mood().components[i] <= r[1]
-                        )
-                else:
-                    try:
-                        raise Exception(
-                            "The number of components for the affective category "
-                            + acl
-                            + " must be the same as the number of the components for the affective state"
-                        )
-                    except Exception as e:
-                        print(e)
-            if matches:
-                result.append(acl)
-        return result
-
-    def deriveASFromAppraisalVariables(self):
-        """
-        This method is used to derive the affective state from the appraisal variables.
-
-        Returns:
-            PAD: Affective state.
-        """
-        em = []
-
-        if (
-            self.Ta.get_appraisal_variables()["expectedness"] != None
-            and self.Ta.get_appraisal_variables()["expectedness"] < 0
-        ):
-            em.append("surprise")
-        if (
-            self.Ta.get_appraisal_variables()["desirability"] != None
-            and self.Ta.get_appraisal_variables()["likelihood"] != None
-        ):
-            if self.Ta.get_appraisal_variables()["desirability"] > 0.5:
-                if self.Ta.get_appraisal_variables()["likelihood"] < 1:
-                    em.append("hope")
-                elif self.Ta.get_appraisal_variables()["likelihood"] == 1:
-                    em.append("joy")
-            else:
-                if self.Ta.get_appraisal_variables()["likelihood"] < 1:
-                    em.append("fear")
-                elif self.Ta.get_appraisal_variables()["likelihood"] == 1:
-                    em.append("sadness")
-                if (
-                    self.Ta.get_appraisal_variables()["causal_attribution"] != None
-                    and self.Ta.get_appraisal_variables()["controllability"] != None
-                    and self.Ta.get_appraisal_variables()["causal_attribution"]
-                    == "other"
-                    and self.Ta.get_appraisal_variables()["controllability"] > 0.7
-                ):
-                    em.append("anger")
-        result = PAD()
-        result.setP(0.0)
-        result.setA(0.0)
-        result.setD(0.0)
-
-        for e in em:
-            if e == "anger":
-                result.setP(result.getP() - 0.51)
-                result.setA(result.getA() + 0.59)
-                result.setD(result.getD() + 0.25)
-            elif e == "fear":
-                result.setP(result.getP() - 0.64)
-                result.setA(result.getA() + 0.60)
-                result.setD(result.getD() - 0.43)
-            elif e == "hope":
-                result.setP(result.getP() + 0.2)
-                result.setA(result.getA() + 0.2)
-                result.setD(result.getD() - 0.1)
-            elif e == "joy":
-                result.setP(result.getP() + 0.76)
-                result.setA(result.getA() + 0.48)
-                result.setD(result.getD() + 0.35)
-            elif e == "sadness":
-                result.setP(result.getP() - 0.63)
-                result.setA(result.getA() - 0.27)
-                result.setD(result.getD() - 0.33)
-            elif e == "surprise":
-                result.setP(result.getP() + 0.4)
-                result.setA(result.getA() + 0.67)
-                result.setD(result.getD() - 0.13)
-
-        # Averaging
-        if len(em) > 0:
-            result.setP(result.getP() / len(em))
-            result.setA(result.getA() / len(em))
-            result.setD(result.getD() / len(em))
-        else:
-            result = None
-        return result
-
-    def cleanAffectivelyRelevantEvents(self) -> bool:
-        return True
-
-    def step(self) -> bool:
-        """
-        This method is used to apply the second part of the reasoning cycle.
-        This method consist in selecting the intention to execute and executing it.
-        This part consists of the following steps:
-        - Select the intention to execute
-        - Apply the clear intention
-        - Apply the execution intention
-
-        Raises:
-            log.error: If the agent has no intentions
-            log.exception: If the agent raises a python exception
-
-        Returns:
-            bool: True if the agent executed or cleaned an intention, False otherwise
-        """
-        options = {
-            "SelInt": self.applySelInt,
-            "CtlInt": self.applyCtlInt,
-            "ExecInt": self.applyExecInt,
-        }
-
-        if self.current_step == "SelInt":
-            if not options[self.current_step]():
-                return False
-
-        if self.current_step in options:
-            flag = options[self.current_step]()
-            return flag
-        else:
-            return True
-
-    def applySelInt(self) -> bool:
-        """
-        This method is used to select the intention to execute
-
-        Raises:
-            RuntimeError:  If the agent has no intentions
-
-        Returns:
-            bool: True if the agent has intentions, False otherwise
-
-        - If the intention not have instructions, the current step will be changed to "CtlInt" to clear the intention
-        - If the intention have instructions, the current step will be changed to "ExecInt" to execute the intention
-
-        """
-        while self.C["I"] and not self.C["I"][0]:
-            self.C["I"].popleft()
-
-        for intention_stack in self.C["I"]:
-            if not intention_stack:
-                continue
-            intention = intention_stack[-1]
-            if intention.waiter is not None:
-                if intention.waiter.poll(self.env):
-                    intention.waiter = None
-                else:
-                    continue
-            break
-        else:
-            return False
-
-        if not intention_stack:
-            return False
-
-        instr = intention.instr
-        self.intention_stack = intention_stack
-        self.intention_selected = intention
-
-        if not instr:
-            self.current_step = "CtlInt"
-        else:
-            self.current_step = "ExecInt"
-
-        return True
-
-    def applyExecInt(self) -> bool:
-        """
-        This method is used to execute the instruction
-
-        Raises:
-            AslError: If the plan fails
-
-        Returns:
-            bool: True if the instruction was executed
-        """
-        try:
-            if self.intention_selected.instr.f(self, self.intention_selected):
-                # We set the intention.instr to the instr.success
-                self.intention_selected.instr = self.intention_selected.instr.success
-
-            else:
-                # We set the intention.instr to the instr.failure
-                self.intention_selected.instr = self.intention_selected.instr.failure
-                if not self.T["i"].instr:
-                    raise AslError("plan failure")
-
-        except AslError as err:
-            log = agentspeak.Log(LOGGER)
-            raise log.error(
-                "%s",
-                err,
-                loc=self.T["i"].instr.loc,
-                extra_locs=self.T["i"].instr.extra_locs,
-            )
-        except Exception as err:
-            log = agentspeak.Log(LOGGER)
-            raise log.exception(
-                "agent %r raised python exception: %r",
-                self.name,
-                err,
-                loc=self.T["i"].instr.loc,
-                extra_locs=self.T["i"].instr.extra_locs,
-            )
-        return True
-
-    def applyCtlInt(self) -> True:
-        """
-        This method is used to control the intention
-
-        Returns:
-            bool: True if the intention was cleared
-        """
-        self.intention_stack.pop()
-        if not self.intention_stack:
-            self.C["I"].remove(self.intention_stack)
-        elif self.intention_selected.calling_term:
-            frozen = self.intention_selected.head_term.freeze(
-                self.intention_selected.scope, {}
-            )
-
-            calling_intention = self.intention_stack[-1]
-            if not agentspeak.unify(
-                self.intention_selected.calling_term,
-                frozen,
-                calling_intention.scope,
-                calling_intention.stack,
-            ):
-                raise RuntimeError("back unification failed")
-        return True
 
     def waiters(self) -> Iterator[agentspeak.runtime.Waiter]:
         """
@@ -1273,7 +428,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         """
         return (
             intention[-1].waiter
-            for intention in self.C["I"]
+            for intention in self.circumstance.get_intentions()
             if intention and intention[-1].waiter
         )
 
@@ -1293,21 +448,22 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             async def affective():
                 while not end_event.is_set():
                     await sem_affective.acquire()
-                    self.current_step_ast = "Appr"
-                    self.affectiveTransitionSystem()
+                    self.emotional_engine.current_step_ast = "Appr"
+                    # self.emotional_engine.affectiveTransitionSystem()
                     release_sem(sem_rational, rational_turns, sem_affective.locked())
 
             # Rational cycle
             async def rational():
                 while not end_event.is_set():
                     await sem_rational.acquire()
-                    if "E" in self.C:
-                        for i in range(len(self.C["E"])):
-                            self.current_step = "SelEv"
-                            self.applySemanticRuleDeliberate()
+                    # if "E" in self.C:
+                    if len(self.circumstance.get_events()) > 0:
+                        for i in range(len(self.circumstance.get_events())):
+                            self.rational_cycle.set_current_step("SelEv")
+                            self.rational_cycle.applySemanticRuleDeliberate()
 
-                    self.current_step = "SelInt"
-                    if not self.step():
+                    self.rational_cycle.set_current_step("SelInt")
+                    if not self.rational_cycle.step():
                         end_event.set()
 
                     release_sem(sem_affective, affective_turns, sem_rational.locked())
@@ -1329,22 +485,3 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         asyncio.run(main())
 
         return False
-
-
-class Concern:
-    """
-    This class is used to represent the concern of the agent
-    """
-
-    def __init__(self, head, query):
-        self.head = head
-        self.query = query
-
-    def __str__(self):
-        return "%s :- %s" % (self.head, self.query)
-
-
-class PairEventDesirability:
-    def __init__(self, event):
-        self.event = event
-        self.av = {}

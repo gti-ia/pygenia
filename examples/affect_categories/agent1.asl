@@ -1,4 +1,4 @@
-concern__(X) :- weather(cloudy) & X=0.5 | weather(sunny) & X=1 .
+//concern__(X) :- weather(cloudy) & X=0.5 | weather(sunny) & X=1 .
 
 personality__: {[O:0.1,C:0.2,E:0.3,A:0.4,N:0.5], 0.6}.
 

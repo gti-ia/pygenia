@@ -123,6 +123,204 @@ class PAD(AffectiveState):
     def setD(self, d):
         self.components[self.PADlabels.dominance.value] = d
 
+    def update_affective_state(self):
+        """
+        This method is used to update the affective state.
+        """
+        self.DISPLACEMENT = 0.5
+        if isinstance(self.Ta["mood"], PAD):
+            pad = PAD()
+            calculated_as = self.deriveASFromAppraisalVariables()
+
+            if calculated_as != None:
+                # PAD current_as = (PAD) getAS();
+                current_as = self.Ta["mood"]
+
+                tmpVal = None
+                vDiff_P = None
+                vDiff_A = None
+                vDiff_D = None
+                vectorToAdd_P = None
+                vectorToAdd_A = None
+                vectorToAdd_D = None
+                lengthToAdd = None
+                VEC = calculated_as
+
+                # Calculating the module of VEC
+                VECmodule = math.sqrt(
+                    math.pow(VEC.getP(), 2)
+                    + math.pow(VEC.getA(), 2)
+                    + math.pow(VEC.getD(), 2)
+                )
+
+                # 1 Applying the pull and push of ALMA
+                if PAD.betweenVECandCenter(current_as, VEC) or not PAD.sameOctant(
+                    current_as, VEC
+                ):
+                    vDiff_P = VEC.getP() - current_as.getP()
+                    vDiff_A = VEC.getA() - current_as.getA()
+                    vDiff_D = VEC.getD() - current_as.getD()
+                else:
+                    vDiff_P = current_as.getP() - VEC.getP()
+                    vDiff_A = current_as.getA() - VEC.getA()
+                    vDiff_D = current_as.getD() - VEC.getD()
+
+                # 2 The module of the vector VEC () is multiplied by the DISPLACEMENT and this
+                # is the length that will have the vector to be added to 'as'
+                lengthToAdd = VECmodule * self.DISPLACEMENT
+
+                # 3 Determining the vector to add
+                vectorToAdd_P = vDiff_P * self.DISPLACEMENT
+                vectorToAdd_A = vDiff_A * self.DISPLACEMENT
+                vectorToAdd_D = vDiff_D * self.DISPLACEMENT
+
+                # 4 The vector vectorToAdd is added to 'as' and this is the new value of
+                # the current affective state
+                tmpVal = current_as.getP() + vectorToAdd_P
+                if tmpVal > 1:
+                    tmpVal = 1.0
+                else:
+                    if tmpVal < -1:
+                        tmpVal = -1.0
+                pad.setP(round(tmpVal * 10.0) / 10.0)
+                tmpVal = current_as.getA() + vectorToAdd_A
+                if tmpVal > 1:
+                    tmpVal = 1.0
+                else:
+                    if tmpVal < -1:
+                        tmpVal = -1.0
+                pad.setA(round(tmpVal * 10.0) / 10.0)
+                tmpVal = current_as.getD() + vectorToAdd_D
+                if tmpVal > 1:
+                    tmpVal = 1.0
+                else:
+                    if tmpVal < -1:
+                        tmpVal = -1.0
+                pad.setD(round(tmpVal * 10.0) / 10.0)
+
+                self.Ta["mood"] = pad
+                AClabel = self.getACLabel()
+                self.AfE = AClabel
+        pass
+
+    def getACLabel(self):
+        """
+        This method is used to get the affective category label.
+
+        Returns:
+            list: Affective category label.
+        """
+
+        result = []
+        matches = True
+        r = None
+        for acl in self.affective_categories.keys():
+            matches = True
+            if self.affective_categories[acl] != None:
+                if len(self.affective_categories[acl]) == len(
+                    self.affective_info.get_mood().affectiveLabels
+                ):
+                    for i in range(len(self.affective_info.get_mood().affectiveLabels)):
+                        r = self.affective_categories[acl][i]
+                        matches = (
+                            matches
+                            and self.affective_info.get_mood().components[i] >= r[0]
+                            and self.affective_info.get_mood().components[i] <= r[1]
+                        )
+                else:
+                    try:
+                        raise Exception(
+                            "The number of components for the affective category "
+                            + acl
+                            + " must be the same as the number of the components for the affective state"
+                        )
+                    except Exception as e:
+                        print(e)
+            if matches:
+                result.append(acl)
+        return result
+
+    def deriveASFromAppraisalVariables(self):
+        """
+        This method is used to derive the affective state from the appraisal variables.
+
+        Returns:
+            PAD: Affective state.
+        """
+        em = []
+
+        if (
+            self.affective_info.get_appraisal_variables()["expectedness"] != None
+            and self.affective_info.get_appraisal_variables()["expectedness"] < 0
+        ):
+            em.append("surprise")
+        if (
+            self.affective_info.get_appraisal_variables()["desirability"] != None
+            and self.affective_info.get_appraisal_variables()["likelihood"] != None
+        ):
+            if self.affective_info.get_appraisal_variables()["desirability"] > 0.5:
+                if self.affective_info.get_appraisal_variables()["likelihood"] < 1:
+                    em.append("hope")
+                elif self.affective_info.get_appraisal_variables()["likelihood"] == 1:
+                    em.append("joy")
+            else:
+                if self.affective_info.get_appraisal_variables()["likelihood"] < 1:
+                    em.append("fear")
+                elif self.affective_info.get_appraisal_variables()["likelihood"] == 1:
+                    em.append("sadness")
+                if (
+                    self.affective_info.get_appraisal_variables()["causal_attribution"]
+                    != None
+                    and self.affective_info.get_appraisal_variables()["controllability"]
+                    != None
+                    and self.affective_info.get_appraisal_variables()[
+                        "causal_attribution"
+                    ]
+                    == "other"
+                    and self.affective_info.get_appraisal_variables()["controllability"]
+                    > 0.7
+                ):
+                    em.append("anger")
+        result = PAD()
+        result.setP(0.0)
+        result.setA(0.0)
+        result.setD(0.0)
+
+        for e in em:
+            if e == "anger":
+                result.setP(result.getP() - 0.51)
+                result.setA(result.getA() + 0.59)
+                result.setD(result.getD() + 0.25)
+            elif e == "fear":
+                result.setP(result.getP() - 0.64)
+                result.setA(result.getA() + 0.60)
+                result.setD(result.getD() - 0.43)
+            elif e == "hope":
+                result.setP(result.getP() + 0.2)
+                result.setA(result.getA() + 0.2)
+                result.setD(result.getD() - 0.1)
+            elif e == "joy":
+                result.setP(result.getP() + 0.76)
+                result.setA(result.getA() + 0.48)
+                result.setD(result.getD() + 0.35)
+            elif e == "sadness":
+                result.setP(result.getP() - 0.63)
+                result.setA(result.getA() - 0.27)
+                result.setD(result.getD() - 0.33)
+            elif e == "surprise":
+                result.setP(result.getP() + 0.4)
+                result.setA(result.getA() + 0.67)
+                result.setD(result.getD() - 0.13)
+
+        # Averaging
+        if len(em) > 0:
+            result.setP(result.getP() / len(em))
+            result.setA(result.getA() / len(em))
+            result.setD(result.getD() / len(em))
+        else:
+            result = None
+        return result
+
 
 class PADExpression:
     """

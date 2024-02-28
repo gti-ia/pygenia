@@ -1,6 +1,83 @@
 from pygenia.affective_state.pad import PAD
 
 
+class TemporalRationalInformation:
+    def __init__(self):
+        self._applicable_plan = None
+        self._applicable_plans = []
+        self._intention = None
+        self._relevant_plans = []
+        self._event = None
+
+    def insert_applicable_plan(self, item):
+        self._applicable_plan = item
+
+    def insert_applicable_plans(self, item):
+        self._applicable_plans.append(item)
+
+    def delete_applicable_plans(self, item):
+        if item in self._applicable_plans:
+            self._applicable_plans.remove(item)
+        else:
+            print("Item not found in applicable_plans")
+
+    def search_applicable_plans(self, item):
+        return item in self._applicable_plans
+
+    def insert_intention(self, item):
+        self._intention = item
+
+    def insert_relevant_plans(self, item):
+        self._relevant_plans.append(item)
+
+    def delete_relevant_plans(self, item):
+        if item in self._relevant_plans:
+            self._relevant_plans.remove(item)
+        else:
+            print("Item not found in relevant_plans")
+
+    def search_relevant_plans(self, item):
+        return item in self._relevant_plans
+
+    def insert_event(self, item):
+        self._event = item
+
+    # Getter and setter for applicable_plan
+    def get_applicable_plan(self):
+        return self._applicable_plan
+
+    def set_applicable_plan(self, value):
+        self._applicable_plan = value
+
+    # Getter and setter for applicable_plans
+    def get_applicable_plans(self):
+        return self._applicable_plans
+
+    def set_applicable_plans(self, values):
+        self._applicable_plans = values
+
+    # Getter and setter for intention
+    def get_intention(self):
+        return self._intention
+
+    def set_intention(self, value):
+        self._intention = value
+
+    # Getter and setter for relevant_plans
+    def get_relevant_plans(self):
+        return self._relevant_plans
+
+    def set_relevant_plans(self, values):
+        self._relevant_plans = values
+
+    # Getter and setter for event
+    def get_event(self):
+        return self._event
+
+    def set_event(self, value):
+        self._event = value
+
+
 class TemporalAffectiveInformation:
     def __init__(self):
         self.temp_beliefs = {"Ba": [], "Br": [], "st": None}

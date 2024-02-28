@@ -77,11 +77,13 @@ class TrueQuery(agentspeak.runtime.TrueQuery):
 class ActionQuery(agentspeak.runtime.ActionQuery):
 
     def execute(self, agent, intention):
-        agent.C["A"] = (
+        agent.circumstance.add_action((self.term, self.impl))
+        """agent.C["A"] = (
             [(self.term, self.impl)]
             if "A" not in agent.C
             else agent.C["A"] + [(self.term, self.impl)]
-        )
+        )"""
+
         for _ in self.impl(agent, self.term, intention):
             yield
 
