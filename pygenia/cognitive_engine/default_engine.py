@@ -1,13 +1,9 @@
 from __future__ import print_function
 
-import collections
-import math
 import agentspeak
 from pygenia.cognitive_engine.termporal_information import TemporalAffectiveInformation
 from pygenia.cognitive_engine.emotional_engine import EmotionalEngine
-import asyncio
 import random
-from enum import Enum
 from typing import Iterator
 import agentspeak.runtime
 import agentspeak.stdlib
@@ -17,14 +13,9 @@ from agentspeak import AslError, asl_str
 import pygenia.personality.personality
 from pygenia.utils import (
     TermQuery,
-    TrueQuery,
-    Instruction,
-    BuildInstructionsVisitor,
-    BuildQueryVisitor,
 )
 from pygenia.cognitive_engine.termporal_information import (
     TemporalAffectiveInformation,
-    TemporalRationalInformation,
 )
 from pygenia.personality.personality import Personality
 from pygenia.affective_state.pad import PAD
@@ -108,46 +99,16 @@ class DefaultEngine(EmotionalEngine):
         self.current_step_ast = "UpAs"
         return True
 
-    def cleanAffectivelyRelevantEvents(self) -> bool:
-        return True
-
-    def applyCope(self):
+    def applyUpdateAffState(self):
         """
-        This method is used to apply the coping process.
+        This method is used to update the affective state.
         """
-
-        SelectingCs = True
-        while SelectingCs and self.C["CS"]:
-            SelectingCs = self.cope()
-        # self.current_step_ast = "Appr"
-        return False
-
-    def cope(self):
-        """
-        This method is used to apply the coping process.
-
-        Returns:
-            bool: True if the coping strategy was applied, False otherwise.
-        """
-
-        if self.C["CS"]:
-            cs = self.C["CS"].pop(0)
-            self["CS"].append(cs)
-            return True
-        else:
-            return False
-
-    def applySelectCopingStrategy(self):
-        """
-        This method is used to select the coping strategy.
-        Personality parser is not implemented yet.
-
-        Returns:
-            bool: True if the coping strategy was selected, False otherwise.
-        """
-        self.C["CS"] = []
-        # self.selectCs()
-        self.current_step_ast = "Cope"
+        if self.eventProcessedInCycle:
+            self.update_affective_state()
+            exit()
+        if self.isAffectRelevantEvent(self.currentEvent):
+            self.Mem.append(self.currentEvent)
+        self.current_step_ast = "SelCs"
         return True
 
     def selectCs(self):
@@ -170,15 +131,46 @@ class DefaultEngine(EmotionalEngine):
         """
         pass
 
-    def applyUpdateAffState(self):
+    def applyCope(self):
         """
-        This method is used to update the affective state.
+        This method is used to apply the coping process.
         """
-        if self.eventProcessedInCycle:
-            self.UpdateAS()
-        if self.isAffectRelevantEvent(self.currentEvent):
-            self.Mem.append(self.currentEvent)
-        self.current_step_ast = "SelCs"
+
+        SelectingCs = True
+        while SelectingCs and self.affective_info.coping_strategies:
+            SelectingCs = self.cope()
+        # self.current_step_ast = "Appr"
+        return False
+
+    def cleanAffectivelyRelevantEvents(self) -> bool:
+        return True
+
+    def cope(self):
+        """
+        This method is used to apply the coping process.
+
+        Returns:
+            bool: True if the coping strategy was applied, False otherwise.
+        """
+
+        if self.affective_info.coping_strategies:
+            cs = self.affective_info.coping_strategies.pop(0)
+            self.affective_info.coping_strategies.append(cs)
+            return True
+        else:
+            return False
+
+    def applySelectCopingStrategy(self):
+        """
+        This method is used to select the coping strategy.
+        Personality parser is not implemented yet.
+
+        Returns:
+            bool: True if the coping strategy was selected, False otherwise.
+        """
+        self.affective_info.coping_strategies = []
+        # self.selectCs()
+        self.current_step_ast = "Cope"
         return True
 
     def isAffectRelevantEvent(self, currentEvent):
@@ -431,9 +423,8 @@ class DefaultEngine(EmotionalEngine):
         This method is used to update the affective state.
         """
         current_mood: AffectiveState = self.affective_info.get_mood()
-        personality: Personality = self.personality
         self.affective_info.set_mood(
-            self.affective_model.update_affective_state(current_mood, personality)
+            self.affective_model.update_affective_state(current_mood, self.agent)
         )
 
     def set_event_queue(self, event_queue):

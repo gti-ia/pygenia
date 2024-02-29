@@ -1,4 +1,5 @@
 from enum import Enum
+import math
 import numpy as np
 
 from pygenia.affective_state.affective_state import AffectiveState
@@ -123,7 +124,7 @@ class PAD(AffectiveState):
     def setD(self, d):
         self.components[self.PADlabels.dominance.value] = d
 
-    def update_affective_state(self):
+    def update_affective_state(self, current_mood, agent):
         """
         This method is used to update the affective state.
         """

@@ -449,7 +449,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                 while not end_event.is_set():
                     await sem_affective.acquire()
                     self.emotional_engine.current_step_ast = "Appr"
-                    # self.emotional_engine.affectiveTransitionSystem()
+                    self.emotional_engine.affectiveTransitionSystem()
                     release_sem(sem_rational, rational_turns, sem_affective.locked())
 
             # Rational cycle

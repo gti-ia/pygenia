@@ -162,7 +162,6 @@ class RationalCycle:
         - The current step will be changed to "SelAppl"
         - If not applicable plans were found, return False
         """
-
         plans_list = self.get_relevant_plans()[
             (
                 self.get_event().trigger,
@@ -348,8 +347,9 @@ class RationalCycle:
                 self.intention_selected.calling_term,
                 frozen,
                 self.intention_selected.scope,
-                # TODO this was calling_intention.scope it must be necesari to debug it
-                calling_intention.stack,
+                # TODO this was calling_intention.scope it must be necesari to compare it
+                self.intention_selected.stack,
+                # TODO this was calling_intention.stack it must be necesari to compare it
             ):
                 raise RuntimeError("back unification failed")
                 pass

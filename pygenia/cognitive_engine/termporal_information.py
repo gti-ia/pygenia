@@ -82,10 +82,10 @@ class TemporalAffectiveInformation:
     def __init__(self):
         self.temp_beliefs = {"Ba": [], "Br": [], "st": None}
         self.appraisal_variables = None
-        self.coping_strategies = None
-        self.appraised_emotions = None
-        self.empathic_emotions = None
-        self.elicited_emotions = None
+        self.coping_strategies = []
+        self.appraised_emotions = []
+        self.empathic_emotions = []
+        self.elicited_emotions = []
         self.mood = None
         self.set_appraisal_variables()
         self.set_mood()
