@@ -15,22 +15,19 @@ class PAD(AffectiveState):
         arousal = 1
         dominance = 2
 
-    def __init__(self, p=None, a=None, d=None):
+    def __init__(self, p=0.0, a=0.0, d=0.0):
         super().__init__()
-        if (p is not None) and (a is not None) and (d is not None):
-            self.setP(p)
-            self.setA(a)
-            self.setD(d)
-        self.affRevEventThreshold = None
+        self.p = p
+        self.a = a
+        self.d = d
+        self.displacement = 0.5
+        self.affRevEventThreshold = []
         self.initAffectiveThreshold()
 
     def initAffectiveThreshold(self):
         """
         This method is used to initialize the affective thresholds of the agent.
         """
-
-        self.DISPLACEMENT = 0.5
-        self.affRevEventThreshold = []
         self.affRevEventThreshold.append(PADExpression(0.8, "or", 0.8, "and", 0.0))
 
     def setAffectiveLabels(self):
@@ -124,87 +121,86 @@ class PAD(AffectiveState):
     def setD(self, d):
         self.components[self.PADlabels.dominance.value] = d
 
-    def update_affective_state(self, current_mood, agent):
+    def update_affective_state(self, agent, affective_info, affective_categories):
         """
         This method is used to update the affective state.
         """
-        self.DISPLACEMENT = 0.5
-        if isinstance(self.Ta["mood"], PAD):
-            pad = PAD()
-            calculated_as = self.deriveASFromAppraisalVariables()
+        self.displacement = 0.5
+        pad = PAD()
+        calculated_as = self.deriveASFromAppraisalVariables(affective_info)
 
-            if calculated_as != None:
-                # PAD current_as = (PAD) getAS();
-                current_as = self.Ta["mood"]
+        if calculated_as != None:
+            # PAD current_as = (PAD) getAS();
+            current_as = affective_info.get_mood()
 
-                tmpVal = None
-                vDiff_P = None
-                vDiff_A = None
-                vDiff_D = None
-                vectorToAdd_P = None
-                vectorToAdd_A = None
-                vectorToAdd_D = None
-                lengthToAdd = None
-                VEC = calculated_as
+            tmpVal = None
+            vDiff_P = None
+            vDiff_A = None
+            vDiff_D = None
+            vectorToAdd_P = None
+            vectorToAdd_A = None
+            vectorToAdd_D = None
+            lengthToAdd = None
+            VEC = calculated_as
 
-                # Calculating the module of VEC
-                VECmodule = math.sqrt(
-                    math.pow(VEC.getP(), 2)
-                    + math.pow(VEC.getA(), 2)
-                    + math.pow(VEC.getD(), 2)
-                )
+            # Calculating the module of VEC
+            VECmodule = math.sqrt(
+                math.pow(VEC.getP(), 2)
+                + math.pow(VEC.getA(), 2)
+                + math.pow(VEC.getD(), 2)
+            )
 
-                # 1 Applying the pull and push of ALMA
-                if PAD.betweenVECandCenter(current_as, VEC) or not PAD.sameOctant(
-                    current_as, VEC
-                ):
-                    vDiff_P = VEC.getP() - current_as.getP()
-                    vDiff_A = VEC.getA() - current_as.getA()
-                    vDiff_D = VEC.getD() - current_as.getD()
-                else:
-                    vDiff_P = current_as.getP() - VEC.getP()
-                    vDiff_A = current_as.getA() - VEC.getA()
-                    vDiff_D = current_as.getD() - VEC.getD()
+            # 1 Applying the pull and push of ALMA
+            if PAD.betweenVECandCenter(current_as, VEC) or not PAD.sameOctant(
+                current_as, VEC
+            ):
+                vDiff_P = VEC.getP() - current_as.getP()
+                vDiff_A = VEC.getA() - current_as.getA()
+                vDiff_D = VEC.getD() - current_as.getD()
+            else:
+                vDiff_P = current_as.getP() - VEC.getP()
+                vDiff_A = current_as.getA() - VEC.getA()
+                vDiff_D = current_as.getD() - VEC.getD()
 
-                # 2 The module of the vector VEC () is multiplied by the DISPLACEMENT and this
-                # is the length that will have the vector to be added to 'as'
-                lengthToAdd = VECmodule * self.DISPLACEMENT
+            # 2 The module of the vector VEC () is multiplied by the DISPLACEMENT and this
+            # is the length that will have the vector to be added to 'as'
+            lengthToAdd = VECmodule * self.displacement
 
-                # 3 Determining the vector to add
-                vectorToAdd_P = vDiff_P * self.DISPLACEMENT
-                vectorToAdd_A = vDiff_A * self.DISPLACEMENT
-                vectorToAdd_D = vDiff_D * self.DISPLACEMENT
+            # 3 Determining the vector to add
+            vectorToAdd_P = vDiff_P * self.displacement
+            vectorToAdd_A = vDiff_A * self.displacement
+            vectorToAdd_D = vDiff_D * self.displacement
 
-                # 4 The vector vectorToAdd is added to 'as' and this is the new value of
-                # the current affective state
-                tmpVal = current_as.getP() + vectorToAdd_P
-                if tmpVal > 1:
-                    tmpVal = 1.0
-                else:
-                    if tmpVal < -1:
-                        tmpVal = -1.0
-                pad.setP(round(tmpVal * 10.0) / 10.0)
-                tmpVal = current_as.getA() + vectorToAdd_A
-                if tmpVal > 1:
-                    tmpVal = 1.0
-                else:
-                    if tmpVal < -1:
-                        tmpVal = -1.0
-                pad.setA(round(tmpVal * 10.0) / 10.0)
-                tmpVal = current_as.getD() + vectorToAdd_D
-                if tmpVal > 1:
-                    tmpVal = 1.0
-                else:
-                    if tmpVal < -1:
-                        tmpVal = -1.0
-                pad.setD(round(tmpVal * 10.0) / 10.0)
+            # 4 The vector vectorToAdd is added to 'as' and this is the new value of
+            # the current affective state
+            tmpVal = current_as.getP() + vectorToAdd_P
+            if tmpVal > 1:
+                tmpVal = 1.0
+            else:
+                if tmpVal < -1:
+                    tmpVal = -1.0
+            pad.setP(round(tmpVal * 10.0) / 10.0)
+            tmpVal = current_as.getA() + vectorToAdd_A
+            if tmpVal > 1:
+                tmpVal = 1.0
+            else:
+                if tmpVal < -1:
+                    tmpVal = -1.0
+            pad.setA(round(tmpVal * 10.0) / 10.0)
+            tmpVal = current_as.getD() + vectorToAdd_D
+            if tmpVal > 1:
+                tmpVal = 1.0
+            else:
+                if tmpVal < -1:
+                    tmpVal = -1.0
+            pad.setD(round(tmpVal * 10.0) / 10.0)
 
-                self.Ta["mood"] = pad
-                AClabel = self.getACLabel()
-                self.AfE = AClabel
+            affective_info.set_mood(pad)
+            AClabel = self.getACLabel(affective_info, affective_categories)
+            self.AfE = AClabel
         pass
 
-    def getACLabel(self):
+    def getACLabel(self, affective_info, affective_categories):
         """
         This method is used to get the affective category label.
 
@@ -215,18 +211,18 @@ class PAD(AffectiveState):
         result = []
         matches = True
         r = None
-        for acl in self.affective_categories.keys():
+        for acl in affective_categories.keys():
             matches = True
-            if self.affective_categories[acl] != None:
-                if len(self.affective_categories[acl]) == len(
-                    self.affective_info.get_mood().affectiveLabels
+            if affective_categories[acl] != None:
+                if len(affective_categories[acl]) == len(
+                    affective_info.get_mood().affectiveLabels
                 ):
-                    for i in range(len(self.affective_info.get_mood().affectiveLabels)):
-                        r = self.affective_categories[acl][i]
+                    for i in range(len(affective_info.get_mood().affectiveLabels)):
+                        r = affective_categories[acl][i]
                         matches = (
                             matches
-                            and self.affective_info.get_mood().components[i] >= r[0]
-                            and self.affective_info.get_mood().components[i] <= r[1]
+                            and affective_info.get_mood().components[i] >= r[0]
+                            and affective_info.get_mood().components[i] <= r[1]
                         )
                 else:
                     try:
@@ -241,7 +237,7 @@ class PAD(AffectiveState):
                 result.append(acl)
         return result
 
-    def deriveASFromAppraisalVariables(self):
+    def deriveASFromAppraisalVariables(self, affective_info):
         """
         This method is used to derive the affective state from the appraisal variables.
 
@@ -251,34 +247,32 @@ class PAD(AffectiveState):
         em = []
 
         if (
-            self.affective_info.get_appraisal_variables()["expectedness"] != None
-            and self.affective_info.get_appraisal_variables()["expectedness"] < 0
+            affective_info.get_appraisal_variables()["expectedness"] != None
+            and affective_info.get_appraisal_variables()["expectedness"] < 0
         ):
             em.append("surprise")
         if (
-            self.affective_info.get_appraisal_variables()["desirability"] != None
-            and self.affective_info.get_appraisal_variables()["likelihood"] != None
+            affective_info.get_appraisal_variables()["desirability"] != None
+            and affective_info.get_appraisal_variables()["likelihood"] != None
         ):
-            if self.affective_info.get_appraisal_variables()["desirability"] > 0.5:
-                if self.affective_info.get_appraisal_variables()["likelihood"] < 1:
+            if affective_info.get_appraisal_variables()["desirability"] > 0.5:
+                if affective_info.get_appraisal_variables()["likelihood"] < 1:
                     em.append("hope")
-                elif self.affective_info.get_appraisal_variables()["likelihood"] == 1:
+                elif affective_info.get_appraisal_variables()["likelihood"] == 1:
                     em.append("joy")
             else:
-                if self.affective_info.get_appraisal_variables()["likelihood"] < 1:
+                if affective_info.get_appraisal_variables()["likelihood"] < 1:
                     em.append("fear")
-                elif self.affective_info.get_appraisal_variables()["likelihood"] == 1:
+                elif affective_info.get_appraisal_variables()["likelihood"] == 1:
                     em.append("sadness")
                 if (
-                    self.affective_info.get_appraisal_variables()["causal_attribution"]
+                    affective_info.get_appraisal_variables()["causal_attribution"]
                     != None
-                    and self.affective_info.get_appraisal_variables()["controllability"]
+                    and affective_info.get_appraisal_variables()["controllability"]
                     != None
-                    and self.affective_info.get_appraisal_variables()[
-                        "causal_attribution"
-                    ]
+                    and affective_info.get_appraisal_variables()["causal_attribution"]
                     == "other"
-                    and self.affective_info.get_appraisal_variables()["controllability"]
+                    and affective_info.get_appraisal_variables()["controllability"]
                     > 0.7
                 ):
                     em.append("anger")

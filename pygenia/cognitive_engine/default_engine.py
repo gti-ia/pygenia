@@ -43,9 +43,9 @@ class DefaultEngine(EmotionalEngine):
         self.event_queue = None
         self.concerns = None
         self.circumstance: Circumstance = None
-        self.affective_categories = None
         self.current_step_ast = None
         self.agent = agent
+        self.affective_lavels = []
 
     def set_agent(self, agent):
         self.agent = agent
@@ -105,7 +105,6 @@ class DefaultEngine(EmotionalEngine):
         """
         if self.eventProcessedInCycle:
             self.update_affective_state()
-            exit()
         if self.isAffectRelevantEvent(self.currentEvent):
             self.Mem.append(self.currentEvent)
         self.current_step_ast = "SelCs"
@@ -388,6 +387,29 @@ class DefaultEngine(EmotionalEngine):
 
         return concern_value
 
+    def applyConcernForDeletion(self, event, concern):
+        """
+        This method is used to apply the concern for the deletion of a belief.
+
+        Args:
+            event (tuple): Event to be appraised.
+            concern (Concern): Concern to be applied.
+
+        Returns:
+            float: Concern value of the event.
+        """
+
+        # We remove the belief from the agent's belief base, so we can calculate the concern value
+        # self.remove_belief(event[0], agentspeak.runtime.Intention())
+        # We calculate the concern value
+        concern_value = self.test_concern(
+            concern.head, agentspeak.runtime.Intention(), concern
+        )
+        # We add the belief to the agent's belief base again
+        # self.add_belief(event[0], agentspeak.runtime.Intention())
+
+        return concern_value
+
     def test_concern(self, term, intention, concern):
         """This function is used to know the value of a concern
 
@@ -424,7 +446,9 @@ class DefaultEngine(EmotionalEngine):
         """
         current_mood: AffectiveState = self.affective_info.get_mood()
         self.affective_info.set_mood(
-            self.affective_model.update_affective_state(current_mood, self.agent)
+            self.affective_model.update_affective_state(
+                self.agent, self.affective_info, self.affective_categories
+            )
         )
 
     def set_event_queue(self, event_queue):

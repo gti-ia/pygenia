@@ -375,19 +375,19 @@ class RationalCycle:
         # Return True if the plan has no annotation
         if plan.annotation is None:
             return True
-        # TODO uncomment this
-        """else:
+        else:
             # Returns True if the plan has required affect states and the agent's current affect state match any of them
             for annotation in plan.annotation.annotations:
                 if annotation.functor == "affect__":
                     for term in annotation.terms:
                         if (
-                            str(term) in self.agent.affective_categories
+                            str(term)
+                            in self.agent.emotional_engine.affective_info.get_mood()
                         ):  # TODO affective_state was self.AfE
                             return True
 
             # Returns False if the agent's current affect does not match any of the required affect states
-            return False"""
+            return False
         return True
 
     def insert_applicable_plan(self, item):

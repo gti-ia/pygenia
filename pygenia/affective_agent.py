@@ -155,11 +155,11 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         # self.fulfilledExpectations = []
         # self.notFulfilledExpectations = []
 
-        self.affective_categories = []
+        # self.affective_categories = []
 
-        self.emotional_engine.set_affective_categories(self.affective_categories)
+        # self.emotional_engine.set_affective_categories(self.affective_categories)
 
-        self.rational_cycle.set_affective_categories(self.affective_categories)
+        # self.rational_cycle.set_affective_categories(self.affective_categories)
 
     def call(
         self,
