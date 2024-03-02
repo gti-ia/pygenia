@@ -2,17 +2,13 @@ from __future__ import print_function
 
 import asyncio
 import collections
-import math
-import random
-from enum import Enum
 from typing import Iterator
 
 import agentspeak
 import agentspeak.runtime
 import agentspeak.stdlib
 import agentspeak.util
-import numpy as np
-from agentspeak import AslError, asl_str
+from agentspeak import AslError
 
 
 import pygenia.lexer
@@ -20,14 +16,11 @@ import pygenia.parser
 import pygenia.stdlib
 import pygenia.personality.personality
 from pygenia.utils import (
-    TermQuery,
     TrueQuery,
     Instruction,
     BuildInstructionsVisitor,
     BuildQueryVisitor,
 )
-from pygenia.cognitive_engine.termporal_information import TemporalAffectiveInformation
-from pygenia.affective_state.pad import PAD
 from pygenia.cognitive_engine.default_engine import DefaultEngine
 from pygenia.cognitive_engine.circumstance import Circumstance
 from pygenia.cognitive_engine.rational_processes import RationalCycle
@@ -449,7 +442,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                 while not end_event.is_set():
                     await sem_affective.acquire()
                     self.emotional_engine.current_step_ast = "Appr"
-                    self.emotional_engine.affectiveTransitionSystem()
+                    self.emotional_engine.affective_transition_system()
                     release_sem(sem_rational, rational_turns, sem_affective.locked())
 
             # Rational cycle

@@ -11,7 +11,7 @@ class PAD(AffectiveState):
     """
 
     class PADlabels(Enum):
-        pleassure = 0
+        pleasure = 0
         arousal = 1
         dominance = 2
 
@@ -22,7 +22,17 @@ class PAD(AffectiveState):
         self.d = d
         self.displacement = 0.5
         self.affRevEventThreshold = []
+        self.affective_dimensions = {}
+        self.affective_labels = []
         self.initAffectiveThreshold()
+        self.set_affective_dimensions()
+
+    def is_affective_relevant(self, event):
+        event.evaluate(
+            self.getP(),
+            self.getA(),
+            self.getD(),
+        )
 
     def initAffectiveThreshold(self):
         """
@@ -30,13 +40,13 @@ class PAD(AffectiveState):
         """
         self.affRevEventThreshold.append(PADExpression(0.8, "or", 0.8, "and", 0.0))
 
-    def setAffectiveLabels(self):
+    def set_affective_dimensions(self):
         """
         This method is used to set the affective labels
         """
-        self.affectiveLabels.append(self.PADlabels.pleassure.name)
-        self.affectiveLabels.append(self.PADlabels.arousal.name)
-        self.affectiveLabels.append(self.PADlabels.dominance.name)
+        self.affective_dimensions.setdefault(self.PADlabels.pleasure, 0.0)
+        self.affective_dimensions.setdefault(self.PADlabels.arousal, 0.0)
+        self.affective_dimensions.setdefault(self.PADlabels.dominance, 0.0)
 
     def clone(self):
         """
@@ -45,10 +55,7 @@ class PAD(AffectiveState):
         Returns:
             PAD: Cloned PAD
         """
-        pad = PAD()
-        pad.init()
-        for i in range(self.getComponentsNumber()):
-            pad.getComponents().append(self.getComponents()[i])
+        pad = self
         return pad
 
     @staticmethod
@@ -104,22 +111,22 @@ class PAD(AffectiveState):
         return result
 
     def getP(self):
-        return self.components[self.PADlabels.pleassure.value]
+        return self.affective_dimensions[self.PADlabels.pleasure]
 
     def setP(self, p):
-        self.components[self.PADlabels.pleassure.value] = p
+        self.affective_dimensions[self.PADlabels.pleasure] = p
 
     def getA(self):
-        return self.components[self.PADlabels.arousal.value]
+        return self.affective_dimensions[self.PADlabels.arousal]
 
     def setA(self, a):
-        self.components[self.PADlabels.arousal.value] = a
+        self.affective_dimensions[self.PADlabels.arousal] = a
 
     def getD(self):
-        return self.components[self.PADlabels.dominance.value]
+        return self.affective_dimensions[self.PADlabels.dominance]
 
     def setD(self, d):
-        self.components[self.PADlabels.dominance.value] = d
+        self.affective_dimensions[self.PADlabels.dominance] = d
 
     def update_affective_state(self, agent, affective_info, affective_categories):
         """
@@ -131,7 +138,6 @@ class PAD(AffectiveState):
 
         if calculated_as != None:
             # PAD current_as = (PAD) getAS();
-            current_as = affective_info.get_mood()
 
             tmpVal = None
             vDiff_P = None
@@ -151,16 +157,14 @@ class PAD(AffectiveState):
             )
 
             # 1 Applying the pull and push of ALMA
-            if PAD.betweenVECandCenter(current_as, VEC) or not PAD.sameOctant(
-                current_as, VEC
-            ):
-                vDiff_P = VEC.getP() - current_as.getP()
-                vDiff_A = VEC.getA() - current_as.getA()
-                vDiff_D = VEC.getD() - current_as.getD()
+            if PAD.betweenVECandCenter(self, VEC) or not PAD.sameOctant(self, VEC):
+                vDiff_P = VEC.getP() - self.getP()
+                vDiff_A = VEC.getA() - self.getA()
+                vDiff_D = VEC.getD() - self.getD()
             else:
-                vDiff_P = current_as.getP() - VEC.getP()
-                vDiff_A = current_as.getA() - VEC.getA()
-                vDiff_D = current_as.getD() - VEC.getD()
+                vDiff_P = self.getP() - VEC.getP()
+                vDiff_A = self.getA() - VEC.getA()
+                vDiff_D = self.getD() - VEC.getD()
 
             # 2 The module of the vector VEC () is multiplied by the DISPLACEMENT and this
             # is the length that will have the vector to be added to 'as'
@@ -173,21 +177,21 @@ class PAD(AffectiveState):
 
             # 4 The vector vectorToAdd is added to 'as' and this is the new value of
             # the current affective state
-            tmpVal = current_as.getP() + vectorToAdd_P
+            tmpVal = self.getP() + vectorToAdd_P
             if tmpVal > 1:
                 tmpVal = 1.0
             else:
                 if tmpVal < -1:
                     tmpVal = -1.0
             pad.setP(round(tmpVal * 10.0) / 10.0)
-            tmpVal = current_as.getA() + vectorToAdd_A
+            tmpVal = self.getA() + vectorToAdd_A
             if tmpVal > 1:
                 tmpVal = 1.0
             else:
                 if tmpVal < -1:
                     tmpVal = -1.0
             pad.setA(round(tmpVal * 10.0) / 10.0)
-            tmpVal = current_as.getD() + vectorToAdd_D
+            tmpVal = self.getD() + vectorToAdd_D
             if tmpVal > 1:
                 tmpVal = 1.0
             else:
@@ -196,11 +200,11 @@ class PAD(AffectiveState):
             pad.setD(round(tmpVal * 10.0) / 10.0)
 
             affective_info.set_mood(pad)
-            AClabel = self.getACLabel(affective_info, affective_categories)
-            self.AfE = AClabel
+            AClabel = self.getACLabel(affective_categories)
+            self.affective_labels = AClabel
         pass
 
-    def getACLabel(self, affective_info, affective_categories):
+    def getACLabel(self, affective_categories):
         """
         This method is used to get the affective category label.
 
@@ -214,16 +218,24 @@ class PAD(AffectiveState):
         for acl in affective_categories.keys():
             matches = True
             if affective_categories[acl] != None:
-                if len(affective_categories[acl]) == len(
-                    affective_info.get_mood().affectiveLabels
-                ):
-                    for i in range(len(affective_info.get_mood().affectiveLabels)):
-                        r = affective_categories[acl][i]
-                        matches = (
-                            matches
-                            and affective_info.get_mood().components[i] >= r[0]
-                            and affective_info.get_mood().components[i] <= r[1]
-                        )
+                if len(affective_categories[acl]) == len(self.affective_dimensions):
+
+                    matches = (
+                        matches
+                        and self.affective_dimensions[self.PADlabels.pleasure]
+                        >= affective_categories[acl][self.PADlabels.pleasure.value][0]
+                        and self.affective_dimensions[self.PADlabels.pleasure]
+                        <= affective_categories[acl][self.PADlabels.pleasure.value][1]
+                        and self.affective_dimensions[self.PADlabels.arousal]
+                        >= affective_categories[acl][self.PADlabels.arousal.value][0]
+                        and self.affective_dimensions[self.PADlabels.arousal]
+                        <= affective_categories[acl][self.PADlabels.arousal.value][1]
+                        and self.affective_dimensions[self.PADlabels.dominance]
+                        >= affective_categories[acl][self.PADlabels.dominance.value][0]
+                        and self.affective_dimensions[self.PADlabels.dominance]
+                        <= affective_categories[acl][self.PADlabels.dominance.value][1]
+                    )
+
                 else:
                     try:
                         raise Exception(

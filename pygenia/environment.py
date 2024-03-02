@@ -21,7 +21,7 @@ from pygenia.utils import (
     TrueQuery,
 )
 from pygenia.affective_agent import AffectiveAgent
-from pygenia.cognitive_engine.default_engine import Concern
+from pygenia.cognitive_engine.emotional_engine import Concern
 
 LOGGER = agentspeak.get_logger(__name__)
 C = {}

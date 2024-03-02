@@ -144,8 +144,5 @@ class TemporalAffectiveInformation:
     def get_mood(self):
         return self.mood
 
-    def set_mood(self, mood=None):
-        if mood is None:
-            self.mood = PAD()
-        else:
-            self.mood = mood
+    def set_mood(self, mood=PAD()):
+        self.mood = mood

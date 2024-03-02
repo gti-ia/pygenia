@@ -1,26 +1,13 @@
 from __future__ import print_function
 
 import agentspeak
-from pygenia.cognitive_engine.termporal_information import TemporalAffectiveInformation
 from pygenia.cognitive_engine.emotional_engine import EmotionalEngine
 import random
-from typing import Iterator
 import agentspeak.runtime
 import agentspeak.stdlib
 import agentspeak.util
-import numpy as np
-from agentspeak import AslError, asl_str
-import pygenia.personality.personality
-from pygenia.utils import (
-    TermQuery,
-)
-from pygenia.cognitive_engine.termporal_information import (
-    TemporalAffectiveInformation,
-)
-from pygenia.personality.personality import Personality
-from pygenia.affective_state.pad import PAD
 from pygenia.affective_state.affective_state import AffectiveState
-from pygenia.cognitive_engine.circumstance import Circumstance
+
 
 LOGGER = agentspeak.get_logger(__name__)
 C = {}
@@ -28,8 +15,7 @@ C = {}
 
 class DefaultEngine(EmotionalEngine):
     def __init__(self, agent):
-        super(EmotionalEngine, self).__init__()
-        self.affective_info = TemporalAffectiveInformation()
+        super().__init__(agent=agent)
         self.affective_categories = {
             "neutral": [
                 [-0.3, 0.3],
@@ -39,18 +25,8 @@ class DefaultEngine(EmotionalEngine):
             "happy": [[0, 1], [0, 1], [-1, 1]],
             "sad": [[-1, 0], [-1, 0], [-1, 1]],
         }
-        self.affective_model = PAD()
-        self.event_queue = None
-        self.concerns = None
-        self.circumstance: Circumstance = None
-        self.current_step_ast = None
-        self.agent = agent
-        self.affective_lavels = []
 
-    def set_agent(self, agent):
-        self.agent = agent
-
-    def affectiveTransitionSystem(self):
+    def affective_transition_system(self):
         """
         This method is used to apply the second part of the reasoning cycle.
         This part consists of the following steps:
@@ -185,11 +161,8 @@ class DefaultEngine(EmotionalEngine):
         result = currentEvent != None
 
         for ex in self.affective_info.get_mood().affRevEventThreshold:
-            result = result and ex.evaluate(
-                self.affective_info.get_mood().getP(),
-                self.affective_info.get_mood().getA(),
-                self.affective_info.get_mood().getD(),
-            )
+            result = result and self.affective_info.get_mood().is_affective_relevant(ex)
+
         return result
 
     def appraisal(self, event, concern_value, concerns):
@@ -364,130 +337,15 @@ class DefaultEngine(EmotionalEngine):
 
         return float(concernVal)
 
-    def applyConcernForAddition(self, event, concern):
-        """
-        This method is used to apply the concern for the addition of a belief.
-
-        Args:
-            event (tuple): Event to be appraised.
-            concern (Concern): Concern to be applied.
-
-        Returns:
-            float: Concern value of the event.
-        """
-
-        # We add the new belief to the agent's belief base, so we can calculate the concern value
-        # self.add_belief(event[0], agentspeak.runtime.Intention().scope)
-        # We calculate the concern value
-        concern_value = self.test_concern(
-            concern.head, agentspeak.runtime.Intention(), concern
-        )
-        # We remove the belief from the agent's belief base again
-        # self.remove_belief(event[0], agentspeak.runtime.Intention())
-
-        return concern_value
-
-    def applyConcernForDeletion(self, event, concern):
-        """
-        This method is used to apply the concern for the deletion of a belief.
-
-        Args:
-            event (tuple): Event to be appraised.
-            concern (Concern): Concern to be applied.
-
-        Returns:
-            float: Concern value of the event.
-        """
-
-        # We remove the belief from the agent's belief base, so we can calculate the concern value
-        # self.remove_belief(event[0], agentspeak.runtime.Intention())
-        # We calculate the concern value
-        concern_value = self.test_concern(
-            concern.head, agentspeak.runtime.Intention(), concern
-        )
-        # We add the belief to the agent's belief base again
-        # self.add_belief(event[0], agentspeak.runtime.Intention())
-
-        return concern_value
-
-    def test_concern(self, term, intention, concern):
-        """This function is used to know the value of a concern
-
-        Args:
-            term (Literal): Term of the concern
-            intention (Intention): Intention of the agent
-            concern (Concern): Concern of the agent
-
-        Raises:
-            AslError:  If the term is not a Literal
-
-        Returns:
-            OR[bool, str]: If the concern is not found, return False. If the concern is found, return the value of the concern
-        """
-        term = agentspeak.evaluate(term, intention.scope)
-
-        if not isinstance(term, agentspeak.Literal):
-            raise AslError("expected concern literal, got: '%s'" % term)
-
-        query = TermQuery(term)
-
-        try:
-            next(query.execute_concern(self.agent, intention, concern))
-            concern_value = " ".join(
-                asl_str(agentspeak.freeze(t, intention.scope, {})) for t in term.args
-            )
-            return concern_value
-        except StopIteration:
-            return False
-
     def update_affective_state(self):
         """
         This method is used to update the affective state.
         """
         current_mood: AffectiveState = self.affective_info.get_mood()
-        self.affective_info.set_mood(
-            self.affective_model.update_affective_state(
-                self.agent, self.affective_info, self.affective_categories
-            )
+
+        self.affective_info.get_mood().update_affective_state(
+            self.agent, self.affective_info, self.affective_categories
         )
-
-    def set_event_queue(self, event_queue):
-        self.event_queue = event_queue
-
-    def set_concerns(self, concerns):
-        self.concerns = concerns
-
-    def set_circumstance(self, circumstance):
-        self.circumstance = circumstance
-
-    def set_affective_categories(self, affective_categories):
-        self.affective_categories = affective_categories
-
-    def waiters(self) -> Iterator[agentspeak.runtime.Waiter]:
-        """
-        This method is used to get the waiters of the intentions
-
-        Returns:
-            Iterator[agentspeak.runtime.Waiter]: The waiters of the intentions
-        """
-        return (
-            intention[-1].waiter
-            for intention in self.circumstance.get_intentions()
-            if intention and intention[-1].waiter
-        )
-
-
-class Concern:
-    """
-    This class is used to represent the concern of the agent
-    """
-
-    def __init__(self, head, query):
-        self.head = head
-        self.query = query
-
-    def __str__(self):
-        return "%s :- %s" % (self.head, self.query)
 
 
 class PairEventDesirability:
