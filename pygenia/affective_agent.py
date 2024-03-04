@@ -61,50 +61,16 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             rules (dict): Rules of the agent.
             plans (dict): Plans of the agent.
             current_step (str): Current step of the agent.
-            P (dict): Personality of the agent containing:
-                - tr (dict): personality traits
-                - rl: rationality level
-                - cs (list): set of coping strategies
-            Cc: Concerns of the agent
-            C (dict): current circumstance represented by a tuple
-            composed of:
-                - I: set of intentions
-                - E: set of events
-                - A: set of actions
-            T (dict): is the temporary information of the current
-            rational cycle consisting of a dictionary containing:
-                - "p": Applicable plan.
-                - "Ap": Applicable plans.
-                - "i": Intention.
-                - "R": Relevant plans.
-                - "e": Event.
-            Mem (dict): Affective memory
-            Ta: Temporal information of the affective cycle. Contains:
-                - Ub:
-                  - Ba: set of beliefs that are going to be added to the belief base
-                  - Br: set of beliefs that are going to be removed from the belief base
-                  - st: identifier of the step st of the cycle in which the beliefs are
-                    going to be added or removed
-                - Av: set of appraisal variables
-                - Cs: set of coping strategies to be executed
-                - Ae: set of emotions that can be elicited by the appraisal process
-                - Ee: set of empathic emotions that can be triggered by the empathic
-                  appraisal process
-                - Fe: the final emotion (or emotions) resulting from the emotion selection
-                  process
-
         """
         super(AffectiveAgent, self).__init__(env, name, beliefs, rules, plans)
 
-        self.emotional_engine = DefaultEngine(agent=self)
+        self.emotional_engine = None  # DefaultEngine(agent=self)
 
         self.rational_cycle = RationalCycle(agent=self)
 
         # Circunstance definition
-        # self.C = {"I": collections.deque(), "E": [], "A": []}
         self.circumstance = Circumstance()
 
-        self.emotional_engine.set_circumstance(self.circumstance)
         self.rational_cycle.set_circumstance(self.circumstance)
 
         self.personality = pygenia.personality.personality.Personality()
@@ -113,46 +79,22 @@ class AffectiveAgent(agentspeak.runtime.Agent):
         self.concerns = (
             collections.defaultdict(lambda: []) if concerns is None else concerns
         )
-        # CHECK TODO set the concerns of default engine to this concerns
-        self.emotional_engine.set_concerns(self.concerns)
-
-        # Temporary information of the current rational cycle definition
-        """self.T = {
-            "applicable_plan": None,
-            "applicable_plans": [],
-            "intention": None,
-            "relevant_plans": [],
-            "event": None,
-        }"""
 
         # Affective memory definition (⟨event 𝜀, affective value av⟩)
         self.Mem = []
 
-        # This is an example of the use of affective categories:
-        """self.affective_categories = {
-            "neutral": [
-                [-0.3, 0.3],
-                [-0.3, 0.3],
-                [-1, 1],
-            ],
-            "happy": [[0, 1], [0, 1], [-1, 1]],
-            "sad": [[-1, 0], [-1, 0], [-1, 1]],
-        }"""
-
         self.event_queue = []
+
+    def set_emotional_engine(self, em_engine_cls, affst_cls):
+        self.emotional_engine = em_engine_cls(agent=self, affst_cls=affst_cls)
+        self.emotional_engine.set_circumstance(self.circumstance)
+        # CHECK TODO set the concerns of default engine to this concerns
+        self.emotional_engine.set_concerns(self.concerns)
         # TODO set the event_queue of default engine to this queue
         self.emotional_engine.set_event_queue(self.event_queue)
 
-        # self.initAffectiveThreshold()
-
-        # self.fulfilledExpectations = []
-        # self.notFulfilledExpectations = []
-
-        # self.affective_categories = []
-
-        # self.emotional_engine.set_affective_categories(self.affective_categories)
-
-        # self.rational_cycle.set_affective_categories(self.affective_categories)
+    def set_personality_cls(self, personality_cls):
+        self.personality = personality_cls()
 
     def call(
         self,
@@ -345,12 +287,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                 plan.remove(differents)
             return True
 
-        """self.circunstance["E"] = (
-            [agentspeak.runtime.Event(trigger, goal_type, term)]
-            if "E" not in self.circunstance
-            else self.circunstance["E"]
-            + [agentspeak.runtime.Event(trigger, goal_type, term)]
-        )"""
         current_event = agentspeak.runtime.Event(trigger, goal_type, term)
         self.circumstance.add_event(current_event)
         self.rational_cycle.set_current_step("SelEv")
@@ -397,21 +333,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
 
         return concern_value
 
-    def check_affect(self, plan):
-        # Return True if the plan has no annotation
-        if plan.annotation is None:
-            return True
-        else:
-            # Returns True if the plan has required affect states and the agent's current affect state match any of them
-            for a in plan.annotation.annotations:
-                if a.functor == "affect__":
-                    for t in a.terms:
-                        if str(t) in self.affective_categories:
-                            return True
-
-            # Returns False if the agent's current affect does not match any of the required affect states
-            return False
-
     def waiters(self) -> Iterator[agentspeak.runtime.Waiter]:
         """
         This method is used to get the waiters of the intentions
@@ -449,7 +370,6 @@ class AffectiveAgent(agentspeak.runtime.Agent):
             async def rational():
                 while not end_event.is_set():
                     await sem_rational.acquire()
-                    # if "E" in self.C:
                     if len(self.circumstance.get_events()) > 0:
                         for i in range(len(self.circumstance.get_events())):
                             self.rational_cycle.set_current_step("SelEv")

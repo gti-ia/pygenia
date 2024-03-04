@@ -45,9 +45,10 @@ class Environment(agentspeak.runtime.Environment):
         actions,
         agent_cls=agentspeak.runtime.Agent,
         name=None,
-        personality_cls=None,
-        affst_cls=None,
-        em_engine_cls=None,
+        personality_cls=pygenia.personality.ocean_personality.OceanPersonality,
+        em_engine_cls=pygenia.cognitive_engine.default_engine.DefaultEngine,
+        affst_cls=pygenia.emotion_models.pad.PAD,
+        affst_parameters=None,
     ):
         """
         This method is used to build the agent from the ast
@@ -62,14 +63,22 @@ class Environment(agentspeak.runtime.Environment):
         log = agentspeak.Log(LOGGER, 3)
         agent = agent_cls(self, self._make_name(name or source.name))
 
-        # Add personality and rationality level to agent prototype.
-        if ast_agent.personality is not None:
-            agent.personality.set_personality(
-                personality_cls, ast_agent.personality.traits
-            )
-            agent.personality.set_rationality_level(
-                ast_agent.personality.rationality_level
-            )
+        if agent_cls is pygenia.affective_agent.AffectiveAgent:
+            # Add personality and rationality level to agent prototype.
+            agent.set_emotional_engine(em_engine_cls, affst_cls)
+            if affst_parameters is not None:
+                agent.emotional_engine.affective_info.get_mood().init_parameters(
+                    affst_parameters
+                )
+            else:
+                agent.emotional_engine.affective_info.get_mood().init_parameters()
+            if ast_agent.personality is not None:
+                agent.personality.set_personality(
+                    personality_cls, ast_agent.personality.traits
+                )
+                agent.personality.set_rationality_level(
+                    ast_agent.personality.rationality_level
+                )
 
         # Add rules to agent prototype.
         for ast_rule in ast_agent.rules:
@@ -181,9 +190,10 @@ class Environment(agentspeak.runtime.Environment):
         actions,
         agent_cls=agentspeak.runtime.Agent,
         name=None,
-        personality_cls=None,
-        affst_cls=None,
-        em_engine_cls=None,
+        personality_cls=pygenia.personality.ocean_personality.OceanPersonality,
+        em_engine_cls=pygenia.cognitive_engine.default_engine.DefaultEngine,
+        affst_cls=pygenia.emotion_models.pad.PAD,
+        affst_parameters=None,
     ):
         # Parse source.
         log = agentspeak.Log(LOGGER, 3)
@@ -192,7 +202,15 @@ class Environment(agentspeak.runtime.Environment):
         log.throw()
 
         return self.build_agent_from_ast(
-            source, ast_agent, actions, agent_cls, name, personality_cls
+            source,
+            ast_agent,
+            actions,
+            agent_cls,
+            name,
+            personality_cls,
+            em_engine_cls,
+            affst_cls,
+            affst_parameters,
         )
 
     def build_agents(
@@ -202,15 +220,22 @@ class Environment(agentspeak.runtime.Environment):
         actions,
         agent_cls=Agent,
         name=None,
-        personality_cls=None,
-        affst_cls=None,
-        em_engine_cls=None,
+        personality_cls=pygenia.personality.ocean_personality.OceanPersonality,
+        em_engine_cls=pygenia.cognitive_engine.default_engine.DefaultEngine,
+        affst_cls=pygenia.emotion_models.pad.PAD,
+        affst_parameters=None,
     ):
         if n <= 0:
             return []
 
         ast_agent, prototype_agent = self._build_agent(
-            source, actions, agent_cls=agent_cls, personality_cls=personality_cls
+            source,
+            actions,
+            agent_cls=agent_cls,
+            personality_cls=personality_cls,
+            em_engine_cls=em_engine_cls,
+            affst_cls=affst_cls,
+            affst_parameters=affst_parameters,
         )
 
         # Create more instances from the prototype, but with their own

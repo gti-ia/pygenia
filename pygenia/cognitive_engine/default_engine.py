@@ -6,7 +6,7 @@ import random
 import agentspeak.runtime
 import agentspeak.stdlib
 import agentspeak.util
-from pygenia.affective_state.affective_state import AffectiveState
+from pygenia.emotion_models.affective_state import AffectiveState
 
 
 LOGGER = agentspeak.get_logger(__name__)
@@ -14,8 +14,8 @@ C = {}
 
 
 class DefaultEngine(EmotionalEngine):
-    def __init__(self, agent):
-        super().__init__(agent=agent)
+    def __init__(self, agent, affst_cls):
+        super().__init__(agent=agent, affst_cls=affst_cls)
         self.affective_categories = {
             "neutral": [
                 [-0.3, 0.3],

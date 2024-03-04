@@ -2,7 +2,7 @@ from enum import Enum
 import math
 import numpy as np
 
-from pygenia.affective_state.affective_state import AffectiveState
+from pygenia.emotion_models.affective_state import AffectiveState
 
 
 class PAD(AffectiveState):
@@ -15,11 +15,11 @@ class PAD(AffectiveState):
         arousal = 1
         dominance = 2
 
-    def __init__(self, p=0.0, a=0.0, d=0.0):
+    def __init__(self):
         super().__init__()
-        self.p = p
-        self.a = a
-        self.d = d
+        self.p = 0.0
+        self.a = 0.0
+        self.d = 0.0
         self.displacement = 0.5
         self.affRevEventThreshold = []
         self.affective_dimensions = {}

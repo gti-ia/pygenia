@@ -17,8 +17,8 @@ from pygenia.cognitive_engine.circumstance import Circumstance
 
 
 class EmotionalEngine:
-    def __init__(self, agent):
-        self.affective_info = TemporalAffectiveInformation()
+    def __init__(self, agent, affst_cls):
+        self.affective_info = TemporalAffectiveInformation(affst_cls)
         self.affective_categories = None
         self.event_queue = None
         self.concerns = None

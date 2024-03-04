@@ -1,4 +1,4 @@
-from pygenia.affective_state.pad import PAD
+from pygenia.emotion_models.pad import PAD
 
 
 class TemporalRationalInformation:
@@ -79,16 +79,15 @@ class TemporalRationalInformation:
 
 
 class TemporalAffectiveInformation:
-    def __init__(self):
+    def __init__(self, affst_cls=PAD):
         self.temp_beliefs = {"Ba": [], "Br": [], "st": None}
         self.appraisal_variables = None
         self.coping_strategies = []
         self.appraised_emotions = []
         self.empathic_emotions = []
         self.elicited_emotions = []
-        self.mood = None
+        self.mood = affst_cls()
         self.set_appraisal_variables()
-        self.set_mood()
 
     def get_temp_beliefs(self):
         return self.Temp_beliefs
@@ -144,5 +143,5 @@ class TemporalAffectiveInformation:
     def get_mood(self):
         return self.mood
 
-    def set_mood(self, mood=PAD()):
+    def set_mood(self, mood):
         self.mood = mood

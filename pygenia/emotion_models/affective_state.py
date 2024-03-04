@@ -16,8 +16,14 @@ class AffectiveState:
         """
         pass
 
+    def init_parameters(self, parameters):
+        pass
+
     def is_affective_relevant(self, event):
         pass
 
     def clone(self):
         pass
+
+    def get_affective_labels(self):
+        return self.affective_labels

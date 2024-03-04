@@ -14,3 +14,4 @@ black==21.7b0
 agentspeak==0.2.0
 colorama==0.4.6
 numpy==1.26.2
+pandas==2.2.1

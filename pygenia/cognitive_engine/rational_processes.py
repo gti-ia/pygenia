@@ -382,7 +382,7 @@ class RationalCycle:
                     for term in annotation.terms:
                         if (
                             str(term)
-                            in self.agent.emotional_engine.affective_info.get_mood().affective_labels
+                            in self.agent.emotional_engine.affective_info.get_mood().get_affective_labels()
                         ):  # TODO affective_state was self.AfE
                             return True
 
