@@ -160,8 +160,8 @@ class DefaultEngine(EmotionalEngine):
         """
         result = currentEvent != None
 
-        for ex in self.affective_info.get_mood().affRevEventThreshold:
-            result = result and self.affective_info.get_mood().is_affective_relevant(ex)
+        # for ex in self.affective_info.get_mood().affRevEventThreshold:
+        #    result = result and self.affective_info.get_mood().is_affective_relevant(ex)
 
         return result
 

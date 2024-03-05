@@ -30,15 +30,26 @@ class PAModel(AffectiveState):
         self.intensity_parameters = self.load_intensity_labels(
             os.path.join(this_path, parameters[1])
         )
-
         self.stimate_min_max()
-        self.fuzzify_emotion()
+
+    def update_affective_state(self):
+        """
+        This method is used to update the affective state
+
+        """
+        pass
+
+    def is_affective_relevant(self, event):
+        pass
+
+    def clone(self):
+        pass
+
+    def get_affective_labels(self):
+        return self.affective_labels
 
     def emotion_degree(self):
-        angle: float = math.atan2(self.arousal, self.pleasure) * 180 / math.pi
-        if angle < 0.0:
-            angle += 360
-        return angle
+        return math.atan2(self.arousal, self.pleasure)
 
     def emotion_intensity(self):
         return (
@@ -50,9 +61,6 @@ class PAModel(AffectiveState):
             )
             / 1000.0
         )
-
-    def emotion_intensity_label(self):
-        pass
 
     def load_emotion_labels(self, emotion_labels_file):
         return pd.read_csv(emotion_labels_file, header=0)
@@ -121,8 +129,7 @@ class PAModel(AffectiveState):
 
     def fuzzify_emotion(self):
         degree = self.emotion_degree()
-        degree = 0.0
-
+        print("--___", self.emotion_degree())
         values = []
         for i in range(len(self.emotion_parameters["label"])):
             y_value = self.von_mises(
@@ -141,6 +148,35 @@ class PAModel(AffectiveState):
         return df_result[df_result["values"] == df_result["values"].max()][
             "label"
         ].tolist()
+
+    def defuzzify_emotion(self, emotion: str, intensity: str):
+        angle = (
+            self.emotion_parameters.loc[self.emotion_parameters["label"] == emotion][
+                ["mean"]
+            ]
+            .iloc[0]
+            .iloc[0]
+        )
+
+        magnitude = (
+            self.intensity_parameters.loc[
+                self.intensity_parameters["label"] == intensity
+            ][["b"]]
+            .iloc[0]
+            .iloc[0]
+            + self.intensity_parameters.loc[
+                self.intensity_parameters["label"] == intensity
+            ][["c"]]
+            .iloc[0]
+            .iloc[0]
+        ) / 2
+        return self.calculate_coordinates(magnitude, angle)
+
+    def calculate_coordinates(self, magnitude, angle):
+        # Calculate x and y coordinates
+        x_coordinate = magnitude * math.cos(angle)
+        y_coordinate = magnitude * math.sin(angle)
+        return x_coordinate, y_coordinate
 
     def von_mises(self, x, mu, kappa):
         return np.exp(kappa * np.cos(x - mu)) / (2 * np.pi * iv(0, kappa))
