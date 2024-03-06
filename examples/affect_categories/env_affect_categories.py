@@ -6,14 +6,14 @@ import pygenia.personality.ocean_personality
 import pygenia.environment
 import pygenia.emotion_models.pa
 import pygenia.cognitive_engine.default_engine
-
+import pygenia.emotion_models.pad
 import os
 
 
 env = pygenia.environment.Environment()
 agent_cls = pygenia.affective_agent.AffectiveAgent
 personality_cls = pygenia.personality.ocean_personality.OceanPersonality
-affst_cls = pygenia.emotion_models.pa.PAModel
+affst_cls = pygenia.emotion_models.pad.PAD
 em_engine_cls = pygenia.cognitive_engine.default_engine.DefaultEngine
 
 

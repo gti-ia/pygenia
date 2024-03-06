@@ -16,15 +16,6 @@ C = {}
 class DefaultEngine(EmotionalEngine):
     def __init__(self, agent, affst_cls):
         super().__init__(agent=agent, affst_cls=affst_cls)
-        self.affective_categories = {
-            "neutral": [
-                [-0.3, 0.3],
-                [-0.3, 0.3],
-                [-1, 1],
-            ],
-            "happy": [[0, 1], [0, 1], [-1, 1]],
-            "sad": [[-1, 0], [-1, 0], [-1, 1]],
-        }
 
     def affective_transition_system(self):
         """
@@ -341,11 +332,7 @@ class DefaultEngine(EmotionalEngine):
         """
         This method is used to update the affective state.
         """
-        current_mood: AffectiveState = self.affective_info.get_mood()
-
-        self.affective_info.get_mood().update_affective_state(
-            self.agent, self.affective_info, self.affective_categories
-        )
+        self.affective_info.get_mood().update_affective_state(self.affective_info)
 
 
 class PairEventDesirability:

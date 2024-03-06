@@ -26,6 +26,21 @@ class PAD(AffectiveState):
         self.affective_labels = []
         self.initAffectiveThreshold()
         self.set_affective_dimensions()
+        self.affective_categories = None
+
+    def init_parameters(self, parameters=None):
+        if parameters is not None:
+            self.affective_categories = parameters
+        else:
+            self.affective_categories = {
+                "neutral": [
+                    [-0.3, 0.3],
+                    [-0.3, 0.3],
+                    [-1, 1],
+                ],
+                "happy": [[0, 1], [0, 1], [-1, 1]],
+                "sad": [[-1, 0], [-1, 0], [-1, 1]],
+            }
 
     def is_affective_relevant(self, event):
         event.evaluate(
@@ -128,7 +143,7 @@ class PAD(AffectiveState):
     def setD(self, d):
         self.affective_dimensions[self.PADlabels.dominance] = d
 
-    def update_affective_state(self, agent, affective_info, affective_categories):
+    def update_affective_state(self, affective_info):
         """
         This method is used to update the affective state.
         """
@@ -183,28 +198,28 @@ class PAD(AffectiveState):
             else:
                 if tmpVal < -1:
                     tmpVal = -1.0
-            pad.setP(round(tmpVal * 10.0) / 10.0)
+            self.setP(round(tmpVal * 10.0) / 10.0)
             tmpVal = self.getA() + vectorToAdd_A
             if tmpVal > 1:
                 tmpVal = 1.0
             else:
                 if tmpVal < -1:
                     tmpVal = -1.0
-            pad.setA(round(tmpVal * 10.0) / 10.0)
+            self.setA(round(tmpVal * 10.0) / 10.0)
             tmpVal = self.getD() + vectorToAdd_D
             if tmpVal > 1:
                 tmpVal = 1.0
             else:
                 if tmpVal < -1:
                     tmpVal = -1.0
-            pad.setD(round(tmpVal * 10.0) / 10.0)
+            self.setD(round(tmpVal * 10.0) / 10.0)
 
-            affective_info.set_mood(pad)
-            AClabel = self.getACLabel(affective_categories)
+            # ffective_info.set_mood(pad)
+            AClabel = self.getACLabel()
             self.affective_labels = AClabel
         pass
 
-    def getACLabel(self, affective_categories):
+    def getACLabel(self):
         """
         This method is used to get the affective category label.
 
@@ -215,25 +230,39 @@ class PAD(AffectiveState):
         result = []
         matches = True
         r = None
-        for acl in affective_categories.keys():
+        for acl in self.affective_categories.keys():
             matches = True
-            if affective_categories[acl] != None:
-                if len(affective_categories[acl]) == len(self.affective_dimensions):
+            if self.affective_categories[acl] != None:
+                if len(self.affective_categories[acl]) == len(
+                    self.affective_dimensions
+                ):
 
                     matches = (
                         matches
                         and self.affective_dimensions[self.PADlabels.pleasure]
-                        >= affective_categories[acl][self.PADlabels.pleasure.value][0]
+                        >= self.affective_categories[acl][
+                            self.PADlabels.pleasure.value
+                        ][0]
                         and self.affective_dimensions[self.PADlabels.pleasure]
-                        <= affective_categories[acl][self.PADlabels.pleasure.value][1]
+                        <= self.affective_categories[acl][
+                            self.PADlabels.pleasure.value
+                        ][1]
                         and self.affective_dimensions[self.PADlabels.arousal]
-                        >= affective_categories[acl][self.PADlabels.arousal.value][0]
+                        >= self.affective_categories[acl][self.PADlabels.arousal.value][
+                            0
+                        ]
                         and self.affective_dimensions[self.PADlabels.arousal]
-                        <= affective_categories[acl][self.PADlabels.arousal.value][1]
+                        <= self.affective_categories[acl][self.PADlabels.arousal.value][
+                            1
+                        ]
                         and self.affective_dimensions[self.PADlabels.dominance]
-                        >= affective_categories[acl][self.PADlabels.dominance.value][0]
+                        >= self.affective_categories[acl][
+                            self.PADlabels.dominance.value
+                        ][0]
                         and self.affective_dimensions[self.PADlabels.dominance]
-                        <= affective_categories[acl][self.PADlabels.dominance.value][1]
+                        <= self.affective_categories[acl][
+                            self.PADlabels.dominance.value
+                        ][1]
                     )
 
                 else:

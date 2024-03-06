@@ -1,3 +1,6 @@
+from typing import Union
+
+
 class AffectiveState:
     """
     This class is used to represent the affective state of the agent
@@ -9,14 +12,14 @@ class AffectiveState:
     def __init__(self):
         self.affective_labels = []
 
-    def update_affective_state(self):
+    def update_affective_state(self, affective_info):
         """
         This method is used to update the affective state
 
         """
         pass
 
-    def init_parameters(self, parameters):
+    def init_parameters(self, parameters: Union[dict, list] = None):
         pass
 
     def is_affective_relevant(self, event):

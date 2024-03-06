@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from scipy.special import iv
 from pygenia.emotion_models.affective_state import AffectiveState
+from typing import Union
 
 this_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -18,11 +19,14 @@ class PAModel(AffectiveState):
 
     def init_parameters(
         self,
-        parameters=[
-            "pa_language_models/spanish_emotions.csv",
-            "pa_language_models/spanish_intensity.csv",
-        ],
+        parameters=None,
     ):
+        if parameters is None:
+            parameters = [
+                "pa_language_models/spanish_emotions.csv",
+                "pa_language_models/spanish_intensity.csv",
+            ]
+
         self.emotion_parameters = self.load_emotion_labels(
             os.path.join(this_path, parameters[0])
         )
@@ -32,11 +36,12 @@ class PAModel(AffectiveState):
         )
         self.stimate_min_max()
 
-    def update_affective_state(self):
+    def update_affective_state(self, affective_info):
         """
         This method is used to update the affective state
 
         """
+
         pass
 
     def is_affective_relevant(self, event):

@@ -127,9 +127,6 @@ class EmotionalEngine:
     def set_circumstance(self, circumstance):
         self.circumstance = circumstance
 
-    def set_affective_categories(self, affective_categories):
-        self.affective_categories = affective_categories
-
     def waiters(self) -> Iterator[agentspeak.runtime.Waiter]:
         """
         This method is used to get the waiters of the intentions

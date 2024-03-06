@@ -24,7 +24,6 @@ class RationalCycle:
         self._relevant_plans = []
         self._event: Event = None
         self.circumstance: Circumstance = None
-        self.affective_categories = None  # TODO remove this variable
         self.agent = agent
 
     def step(self) -> bool:
@@ -466,9 +465,6 @@ class RationalCycle:
 
     def set_circumstance(self, circumstance):
         self.circumstance = circumstance
-
-    def set_affective_categories(self, affective_categories):
-        self.affective_categories = affective_categories
 
     def set_agent(self, agent):
         self.agent = agent
