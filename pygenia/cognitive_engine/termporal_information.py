@@ -1,4 +1,5 @@
 from pygenia.emotion_models.pad import PAD
+from pygenia.emotion_models.pa import PAModel
 
 
 class TemporalRationalInformation:

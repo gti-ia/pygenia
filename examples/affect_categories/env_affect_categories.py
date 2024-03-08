@@ -13,7 +13,7 @@ import os
 env = pygenia.environment.Environment()
 agent_cls = pygenia.affective_agent.AffectiveAgent
 personality_cls = pygenia.personality.ocean_personality.OceanPersonality
-affst_cls = pygenia.emotion_models.pad.PAD
+affst_cls = pygenia.emotion_models.pa.PAModel
 em_engine_cls = pygenia.cognitive_engine.default_engine.DefaultEngine
 
 

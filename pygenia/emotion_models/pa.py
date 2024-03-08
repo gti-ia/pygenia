@@ -16,6 +16,7 @@ class PAModel(AffectiveState):
         self.arousal = 0.0
         self.emotion_parameters = None
         self.intensity_parameters = None
+        self.affective_labels = []
 
     def init_parameters(
         self,
@@ -36,13 +37,80 @@ class PAModel(AffectiveState):
         )
         self.stimate_min_max()
 
+    def estimate_emotion(self, affective_info):
+        affective_info.set_elicited_emotions(
+            self.deriveASFromAppraisalVariables(affective_info)
+        )
+
     def update_affective_state(self, affective_info):
         """
         This method is used to update the affective state
 
         """
+        emotion = affective_info.get_elicited_emotions()
+        if len(emotion) > 0:
+            emotion = (emotion[0].pleasure, emotion[0].arousal)
 
-        pass
+            self.pleasure, self.arousal = self.vector_sum(
+                (self.pleasure, self.arousal), emotion
+            )
+            self.affective_labels = self.fuzzify_emotion()
+
+    def deriveASFromAppraisalVariables(self, affective_info):
+        """
+        This method is used to derive the affective state from the appraisal variables.
+
+        Returns:
+            PA: Affective state.
+        """
+        emotion = (0.0, 0.0)
+
+        if (
+            affective_info.get_appraisal_variables()["expectedness"] != None
+            and affective_info.get_appraisal_variables()["expectedness"] < 0
+        ):
+            emotion[0] += 0.4
+            emotion[1] += 0.67
+        if (
+            affective_info.get_appraisal_variables()["desirability"] != None
+            and affective_info.get_appraisal_variables()["likelihood"] != None
+        ):
+            if affective_info.get_appraisal_variables()["desirability"] > 0.5:
+                if affective_info.get_appraisal_variables()["likelihood"] < 1:
+                    emotion[0] += 0.2
+                    emotion[1] += 0.2
+                elif affective_info.get_appraisal_variables()["likelihood"] == 1:
+                    emotion[0] += 0.78
+                    emotion[1] += 0.48
+            else:
+                if affective_info.get_appraisal_variables()["likelihood"] < 1:
+                    emotion[0] -= 0.64
+                    emotion[1] += 0.60
+                elif affective_info.get_appraisal_variables()["likelihood"] == 1:
+                    emotion[0] -= 0.63
+                    emotion[1] -= 0.27
+                if (
+                    affective_info.get_appraisal_variables()["causal_attribution"]
+                    != None
+                    and affective_info.get_appraisal_variables()["controllability"]
+                    != None
+                    and affective_info.get_appraisal_variables()["causal_attribution"]
+                    == "other"
+                    and affective_info.get_appraisal_variables()["controllability"]
+                    > 0.7
+                ):
+                    emotion[0] -= 0.51
+                    emotion[1] += 0.59
+
+        return emotion
+
+    def vector_sum(self, vector1, vector2, weight1=1, weight2=1):
+        if len(vector1) != 2 or len(vector2) != 2:
+            raise ValueError("Vectors must be bidimensional.")
+        sum_x = max(0, min(1, vector1[0] * weight1 + vector2[0] * weight2))
+        sum_y = max(0, min(1, vector1[1] * weight1 + vector2[1] * weight2))
+
+        return sum_x, sum_y
 
     def is_affective_relevant(self, event):
         pass
@@ -134,7 +202,6 @@ class PAModel(AffectiveState):
 
     def fuzzify_emotion(self):
         degree = self.emotion_degree()
-        print("--___", self.emotion_degree())
         values = []
         for i in range(len(self.emotion_parameters["label"])):
             y_value = self.von_mises(
