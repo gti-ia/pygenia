@@ -5,6 +5,7 @@ import numpy as np
 from scipy.special import iv
 from pygenia.emotion_models.affective_state import AffectiveState
 from typing import Union
+from collections import namedtuple
 
 this_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -12,8 +13,7 @@ this_path = os.path.dirname(os.path.abspath(__file__))
 class PAModel(AffectiveState):
     def __init__(self) -> None:
         super().__init__()
-        self.pleasure = 0.0
-        self.arousal = 0.0
+        self.mood = Point(pleasure=0.0, arousal=0.0)
         self.emotion_parameters = None
         self.intensity_parameters = None
         self.affective_labels = []
@@ -63,32 +63,33 @@ class PAModel(AffectiveState):
         Returns:
             PA: Affective state.
         """
-        emotion = (0.0, 0.0)
+        point = namedtuple("point", ["pleasure", "arousal"])
+        emotion = point(pleasure=0.0, arousal=0.0)
 
         if (
             affective_info.get_appraisal_variables()["expectedness"] != None
             and affective_info.get_appraisal_variables()["expectedness"] < 0
         ):
-            emotion[0] += 0.4
-            emotion[1] += 0.67
+            emotion._replace(pleasure=emotion[0] + 0.4)
+            emotion._replace(arousal=emotion[0] + 0.67)
         if (
             affective_info.get_appraisal_variables()["desirability"] != None
             and affective_info.get_appraisal_variables()["likelihood"] != None
         ):
             if affective_info.get_appraisal_variables()["desirability"] > 0.5:
                 if affective_info.get_appraisal_variables()["likelihood"] < 1:
-                    emotion[0] += 0.2
-                    emotion[1] += 0.2
+                    emotion._replace(pleasure=emotion[0] + 0.2)
+                    emotion._replace(arousal=emotion[0] + 0.2)
                 elif affective_info.get_appraisal_variables()["likelihood"] == 1:
-                    emotion[0] += 0.78
-                    emotion[1] += 0.48
+                    emotion._replace(pleasure=emotion[0] + 0.78)
+                    emotion._replace(arousal=emotion[0] + 0.48)
             else:
                 if affective_info.get_appraisal_variables()["likelihood"] < 1:
-                    emotion[0] -= 0.64
-                    emotion[1] += 0.60
+                    emotion._replace(pleasure=emotion[0] - 0.64)
+                    emotion._replace(arousal=emotion[0] + 0.60)
                 elif affective_info.get_appraisal_variables()["likelihood"] == 1:
-                    emotion[0] -= 0.63
-                    emotion[1] -= 0.27
+                    emotion._replace(pleasure=emotion[0] - 0.63)
+                    emotion._replace(arousal=emotion[0] - 0.27)
                 if (
                     affective_info.get_appraisal_variables()["causal_attribution"]
                     != None
@@ -99,8 +100,8 @@ class PAModel(AffectiveState):
                     and affective_info.get_appraisal_variables()["controllability"]
                     > 0.7
                 ):
-                    emotion[0] -= 0.51
-                    emotion[1] += 0.59
+                    emotion._replace(pleasure=emotion[0] - 0.51)
+                    emotion._replace(arousal=emotion[0] + 0.59)
 
         return emotion
 
@@ -252,3 +253,15 @@ class PAModel(AffectiveState):
 
     def von_mises(self, x, mu, kappa):
         return np.exp(kappa * np.cos(x - mu)) / (2 * np.pi * iv(0, kappa))
+
+
+class Point:
+    def __init__(self, pleasure, arousal):
+        self.pleasure = pleasure
+        self.arousal = arousal
+
+    def __str__(self):
+        return f"({self.pleasure}, {self.arousal})"
+
+    def __repr__(self):
+        return f"Point({self.pleasure}, {self.arousal})"

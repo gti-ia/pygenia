@@ -143,13 +143,20 @@ class PAD(AffectiveState):
     def setD(self, d):
         self.affective_dimensions[self.PADlabels.dominance] = d
 
+    def estimate_emotion(self, affective_info):
+        affective_info.set_elicited_emotions(
+            self.deriveASFromAppraisalVariables(affective_info)
+        )
+
     def update_affective_state(self, affective_info):
         """
         This method is used to update the affective state.
         """
         self.displacement = 0.5
         pad = PAD()
-        calculated_as = self.deriveASFromAppraisalVariables(affective_info)
+        calculated_as = (
+            affective_info.get_elicited_emotions()
+        )  # self.deriveASFromAppraisalVariables(affective_info)
 
         if calculated_as != None:
             # PAD current_as = (PAD) getAS();

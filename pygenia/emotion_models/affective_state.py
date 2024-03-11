@@ -19,6 +19,9 @@ class AffectiveState:
         """
         pass
 
+    def estimate_emotion(self, affective_info):
+        pass
+
     def init_parameters(self, parameters: Union[dict, list] = None):
         pass
 

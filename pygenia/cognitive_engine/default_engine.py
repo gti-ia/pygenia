@@ -203,6 +203,9 @@ class DefaultEngine(EmotionalEngine):
             self.affective_info.get_appraisal_variables()["likelihood"] = None
             self.affective_info.get_appraisal_variables()["causal_attribution"] = None
             self.affective_info.get_appraisal_variables()["controllability"] = None
+
+        self.affective_info.get_mood().estimate_emotion(self.affective_info)
+
         return result
 
     def controllability(self, event, concernsValue, desirability):
