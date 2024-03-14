@@ -10,6 +10,18 @@ from collections import namedtuple
 this_path = os.path.dirname(os.path.abspath(__file__))
 
 
+class Point:
+    def __init__(self, pleasure, arousal):
+        self.pleasure = pleasure
+        self.arousal = arousal
+
+    def __str__(self):
+        return f"({self.pleasure}, {self.arousal})"
+
+    def __repr__(self):
+        return f"Point({self.pleasure}, {self.arousal})"
+
+
 class PAModel(AffectiveState):
     def __init__(self) -> None:
         super().__init__()
@@ -51,8 +63,8 @@ class PAModel(AffectiveState):
         if len(emotion) > 0:
             emotion = (emotion[0].pleasure, emotion[0].arousal)
 
-            self.pleasure, self.arousal = self.vector_sum(
-                (self.pleasure, self.arousal), emotion
+            self.mood.pleasure, self.mood.arousal = self.vector_sum(
+                (self.mood.pleasure, self.mood.arousal), emotion
             )
             self.affective_labels = self.fuzzify_emotion()
 
@@ -103,7 +115,7 @@ class PAModel(AffectiveState):
                     emotion._replace(pleasure=emotion[0] - 0.51)
                     emotion._replace(arousal=emotion[0] + 0.59)
 
-        return emotion
+        return [emotion]
 
     def vector_sum(self, vector1, vector2, weight1=1, weight2=1):
         if len(vector1) != 2 or len(vector2) != 2:
@@ -122,14 +134,16 @@ class PAModel(AffectiveState):
     def get_affective_labels(self):
         return self.affective_labels
 
-    def emotion_degree(self):
-        return math.atan2(self.arousal, self.pleasure)
+    def emotion_degree(self, vector: Point):
 
-    def emotion_intensity(self):
+        return math.atan2(vector.arousal, vector.pleasure)
+
+    def emotion_intensity(self, vector: Point):
         return (
             round(
                 math.sqrt(
-                    (self.pleasure * self.pleasure) + (self.arousal * self.arousal)
+                    (vector.pleasure * vector.pleasure)
+                    + (vector.arousal * vector.arousal)
                 )
                 * 1000.0
             )
@@ -158,7 +172,7 @@ class PAModel(AffectiveState):
         self.emotion_parameters.loc[:, "min"] = min_values
 
     def fuzzify_intensity(self):
-        intensity = self.emotion_intensity()
+        intensity = self.emotion_intensity(self.mood)
         values = []
         for i in range(len(self.intensity_parameters["label"])):
             values.append(
@@ -202,7 +216,7 @@ class PAModel(AffectiveState):
         ].tolist()
 
     def fuzzify_emotion(self):
-        degree = self.emotion_degree()
+        degree = self.emotion_degree(self.mood)
         values = []
         for i in range(len(self.emotion_parameters["label"])):
             y_value = self.von_mises(
@@ -253,15 +267,3 @@ class PAModel(AffectiveState):
 
     def von_mises(self, x, mu, kappa):
         return np.exp(kappa * np.cos(x - mu)) / (2 * np.pi * iv(0, kappa))
-
-
-class Point:
-    def __init__(self, pleasure, arousal):
-        self.pleasure = pleasure
-        self.arousal = arousal
-
-    def __str__(self):
-        return f"({self.pleasure}, {self.arousal})"
-
-    def __repr__(self):
-        return f"Point({self.pleasure}, {self.arousal})"
