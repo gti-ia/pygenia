@@ -372,10 +372,6 @@ class RationalCycle:
     # TODO move this method to the default emotion engine once the affective state is set
     def check_affect(self, plan):
         # Return True if the plan has no annotation
-        print(
-            "---___",
-            self.agent.emotional_engine.affective_info.get_mood().get_affective_labels(),
-        )
         if plan.annotation is None:
             return True
         else:
@@ -391,7 +387,6 @@ class RationalCycle:
 
             # Returns False if the agent's current affect does not match any of the required affect states
             return False
-        return True
 
     def insert_applicable_plan(self, item):
         self._applicable_plan = item

@@ -15,6 +15,18 @@ class Point:
         self.pleasure = pleasure
         self.arousal = arousal
 
+    def set_pleasure(self, pleasure):
+        self.pleasure = pleasure
+
+    def set_arousal(self, arousal):
+        self.arousal = arousal
+
+    def get_pleasure(self):
+        return self.pleasure
+
+    def get_arousal(self):
+        return self.arousal
+
     def __str__(self):
         return f"({self.pleasure}, {self.arousal})"
 
@@ -61,12 +73,10 @@ class PAModel(AffectiveState):
         """
         emotion = affective_info.get_elicited_emotions()
         if len(emotion) > 0:
-            emotion = (emotion[0].pleasure, emotion[0].arousal)
+            emotion = emotion[0]
 
-            self.mood.pleasure, self.mood.arousal = self.vector_sum(
-                (self.mood.pleasure, self.mood.arousal), emotion
-            )
-            self.affective_labels = self.fuzzify_emotion()
+            self.mood.pleasure, self.mood.arousal = self.vector_sum(self.mood, emotion)
+            self.affective_labels = self.fuzzify_emotion(self.mood)
 
     def deriveASFromAppraisalVariables(self, affective_info):
         """
@@ -75,33 +85,32 @@ class PAModel(AffectiveState):
         Returns:
             PA: Affective state.
         """
-        point = namedtuple("point", ["pleasure", "arousal"])
-        emotion = point(pleasure=0.0, arousal=0.0)
+        emotion = Point(pleasure=0.0, arousal=0.0)
 
         if (
             affective_info.get_appraisal_variables()["expectedness"] != None
             and affective_info.get_appraisal_variables()["expectedness"] < 0
         ):
-            emotion._replace(pleasure=emotion[0] + 0.4)
-            emotion._replace(arousal=emotion[0] + 0.67)
+            emotion.set_pleasure(emotion.get_pleasure() + 0.4)
+            emotion.set_arousal(emotion.get_arousal() + 0.67)
         if (
             affective_info.get_appraisal_variables()["desirability"] != None
             and affective_info.get_appraisal_variables()["likelihood"] != None
         ):
             if affective_info.get_appraisal_variables()["desirability"] > 0.5:
                 if affective_info.get_appraisal_variables()["likelihood"] < 1:
-                    emotion._replace(pleasure=emotion[0] + 0.2)
-                    emotion._replace(arousal=emotion[0] + 0.2)
+                    emotion.set_pleasure(emotion.get_pleasure() + 0.2)
+                    emotion.set_arousal(emotion.get_arousal() + 0.2)
                 elif affective_info.get_appraisal_variables()["likelihood"] == 1:
-                    emotion._replace(pleasure=emotion[0] + 0.78)
-                    emotion._replace(arousal=emotion[0] + 0.48)
+                    emotion.set_pleasure(emotion.get_pleasure() + 0.78)
+                    emotion.set_arousal(emotion.get_arousal() + 0.48)
             else:
                 if affective_info.get_appraisal_variables()["likelihood"] < 1:
-                    emotion._replace(pleasure=emotion[0] - 0.64)
-                    emotion._replace(arousal=emotion[0] + 0.60)
+                    emotion.set_pleasure(emotion.get_pleasure() - 0.64)
+                    emotion.set_arousal(emotion.get_arousal() + 0.60)
                 elif affective_info.get_appraisal_variables()["likelihood"] == 1:
-                    emotion._replace(pleasure=emotion[0] - 0.63)
-                    emotion._replace(arousal=emotion[0] - 0.27)
+                    emotion.set_pleasure(emotion.get_pleasure() - 0.63)
+                    emotion.set_arousal(emotion.get_arousal() - 0.27)
                 if (
                     affective_info.get_appraisal_variables()["causal_attribution"]
                     != None
@@ -112,16 +121,16 @@ class PAModel(AffectiveState):
                     and affective_info.get_appraisal_variables()["controllability"]
                     > 0.7
                 ):
-                    emotion._replace(pleasure=emotion[0] - 0.51)
-                    emotion._replace(arousal=emotion[0] + 0.59)
+                    emotion.set_pleasure(emotion.get_pleasure() - 0.51)
+                    emotion.set_arousal(emotion.get_arousal() + 0.59)
 
         return [emotion]
 
-    def vector_sum(self, vector1, vector2, weight1=1, weight2=1):
-        if len(vector1) != 2 or len(vector2) != 2:
-            raise ValueError("Vectors must be bidimensional.")
-        sum_x = max(0, min(1, vector1[0] * weight1 + vector2[0] * weight2))
-        sum_y = max(0, min(1, vector1[1] * weight1 + vector2[1] * weight2))
+    def vector_sum(
+        self, vector1: Point, vector2: Point, weight1: float = 1.0, weight2: float = 1.0
+    ):
+        sum_x = max(0, min(1, vector1.pleasure * weight1 + vector2.pleasure * weight2))
+        sum_y = max(0, min(1, vector1.arousal * weight1 + vector2.arousal * weight2))
 
         return sum_x, sum_y
 
@@ -171,8 +180,8 @@ class PAModel(AffectiveState):
         self.emotion_parameters.loc[:, "max"] = max_values
         self.emotion_parameters.loc[:, "min"] = min_values
 
-    def fuzzify_intensity(self):
-        intensity = self.emotion_intensity(self.mood)
+    def fuzzify_intensity(self, vector: Point):
+        intensity = self.emotion_intensity(vector)
         values = []
         for i in range(len(self.intensity_parameters["label"])):
             values.append(
@@ -215,8 +224,8 @@ class PAModel(AffectiveState):
             "label"
         ].tolist()
 
-    def fuzzify_emotion(self):
-        degree = self.emotion_degree(self.mood)
+    def fuzzify_emotion(self, vector: Point):
+        degree = self.emotion_degree(vector)
         values = []
         for i in range(len(self.emotion_parameters["label"])):
             y_value = self.von_mises(
