@@ -26,12 +26,12 @@ others__: { lily: [ affective_link: 0.9 ],
 !angry_emotion;
 !help.
 
-@p1[affect__(happy)]
+@p1[affect__(felicidad)]
 +!happy_emotion
 <-
 .print("Great! I am happy").
 
-@p2[affect__(sad)]
+@p2[affect__(tristeza, sorpresa)]
 +!sad_emotion
 <-
 .print("Too bad. I am sad").

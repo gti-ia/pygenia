@@ -4,8 +4,6 @@ import pandas as pd
 import numpy as np
 from scipy.special import iv
 from pygenia.emotion_models.affective_state import AffectiveState
-from typing import Union
-from collections import namedtuple
 
 this_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -50,14 +48,22 @@ class PAModel(AffectiveState):
             parameters = [
                 "pa_language_models/spanish_emotions.csv",
                 "pa_language_models/spanish_intensity.csv",
+                "pa_language_models/spanish_appraisal.csv",
             ]
 
-        self.emotion_parameters = self.load_emotion_labels(
-            os.path.join(this_path, parameters[0])
+        if len(parameters) < 3:
+            raise IndexError(
+                "PA parameters must have 3 components give: '%d'" % len(parameters)
+            )
+
+        self.emotion_parameters = self.load_csv(os.path.join(this_path, parameters[0]))
+
+        self.intensity_parameters = self.load_csv(
+            os.path.join(this_path, parameters[1])
         )
 
-        self.intensity_parameters = self.load_intensity_labels(
-            os.path.join(this_path, parameters[1])
+        self.appraisal_parameters = self.load_csv(
+            os.path.join(this_path, parameters[2])
         )
         self.stimate_min_max()
 
@@ -86,31 +92,46 @@ class PAModel(AffectiveState):
             PA: Affective state.
         """
         emotion = Point(pleasure=0.0, arousal=0.0)
-
         if (
             affective_info.get_appraisal_variables()["expectedness"] != None
             and affective_info.get_appraisal_variables()["expectedness"] < 0
         ):
-            emotion.set_pleasure(emotion.get_pleasure() + 0.4)
-            emotion.set_arousal(emotion.get_arousal() + 0.67)
+
+            pleasure, arousal = self.calculate_coordinates(
+                magnitude=0.5, angle=self.appraisal_parameters["angle"].iloc[0]
+            )
+            emotion.set_pleasure(emotion.get_pleasure() + pleasure)
+            emotion.set_arousal(emotion.get_arousal() + arousal)
         if (
             affective_info.get_appraisal_variables()["desirability"] != None
             and affective_info.get_appraisal_variables()["likelihood"] != None
         ):
             if affective_info.get_appraisal_variables()["desirability"] > 0.5:
                 if affective_info.get_appraisal_variables()["likelihood"] < 1:
-                    emotion.set_pleasure(emotion.get_pleasure() + 0.2)
-                    emotion.set_arousal(emotion.get_arousal() + 0.2)
+                    pleasure, arousal = self.calculate_coordinates(
+                        magnitude=0.5, angle=self.appraisal_parameters["angle"].iloc[1]
+                    )
+                    emotion.set_pleasure(emotion.get_pleasure() + pleasure)
+                    emotion.set_arousal(emotion.get_arousal() + arousal)
                 elif affective_info.get_appraisal_variables()["likelihood"] == 1:
-                    emotion.set_pleasure(emotion.get_pleasure() + 0.78)
-                    emotion.set_arousal(emotion.get_arousal() + 0.48)
+                    pleasure, arousal = self.calculate_coordinates(
+                        magnitude=0.5, angle=self.appraisal_parameters["angle"].iloc[2]
+                    )
+                    emotion.set_pleasure(emotion.get_pleasure() + pleasure)
+                    emotion.set_arousal(emotion.get_arousal() + arousal)
             else:
                 if affective_info.get_appraisal_variables()["likelihood"] < 1:
-                    emotion.set_pleasure(emotion.get_pleasure() - 0.64)
-                    emotion.set_arousal(emotion.get_arousal() + 0.60)
+                    pleasure, arousal = self.calculate_coordinates(
+                        magnitude=0.5, angle=self.appraisal_parameters["angle"].iloc[3]
+                    )
+                    emotion.set_pleasure(emotion.get_pleasure() + pleasure)
+                    emotion.set_arousal(emotion.get_arousal() + arousal)
                 elif affective_info.get_appraisal_variables()["likelihood"] == 1:
-                    emotion.set_pleasure(emotion.get_pleasure() - 0.63)
-                    emotion.set_arousal(emotion.get_arousal() - 0.27)
+                    pleasure, arousal = self.calculate_coordinates(
+                        magnitude=0.5, angle=self.appraisal_parameters["angle"].iloc[4]
+                    )
+                    emotion.set_pleasure(emotion.get_pleasure() + pleasure)
+                    emotion.set_arousal(emotion.get_arousal() + arousal)
                 if (
                     affective_info.get_appraisal_variables()["causal_attribution"]
                     != None
@@ -121,8 +142,11 @@ class PAModel(AffectiveState):
                     and affective_info.get_appraisal_variables()["controllability"]
                     > 0.7
                 ):
-                    emotion.set_pleasure(emotion.get_pleasure() - 0.51)
-                    emotion.set_arousal(emotion.get_arousal() + 0.59)
+                    pleasure, arousal = self.calculate_coordinates(
+                        magnitude=0.5, angle=self.appraisal_parameters["angle"].iloc[5]
+                    )
+                    emotion.set_pleasure(emotion.get_pleasure() + pleasure)
+                    emotion.set_arousal(emotion.get_arousal() + arousal)
 
         return [emotion]
 
@@ -159,11 +183,8 @@ class PAModel(AffectiveState):
             / 1000.0
         )
 
-    def load_emotion_labels(self, emotion_labels_file):
-        return pd.read_csv(emotion_labels_file, header=0)
-
-    def load_intensity_labels(self, intensity_labels_file):
-        return pd.read_csv(intensity_labels_file, header=0)
+    def load_csv(self, path):
+        return pd.read_csv(path, header=0)
 
     def stimate_min_max(self):
         x_values = np.linspace(0, 2 * np.pi, 100)

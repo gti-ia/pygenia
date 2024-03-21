@@ -1,9 +1,9 @@
 label,mean,sd
-Happiness,0.14,0.58
-Excitement,0.84,0.34
-Fear,1.27,0.58
-Anger,1.73,0.76
-Sadness,3.62,0.77
-Boredom,4.20,0.69
-Sleepiness,4.75,0.33
-Calm,5.52,0.34
+happiness,0.14,0.58
+excitement,0.84,0.34
+fear,1.27,0.58
+anger,1.73,0.76
+sadness,3.62,0.77
+boredom,4.20,0.69
+sleepiness,4.75,0.33
+calm,5.52,0.34
