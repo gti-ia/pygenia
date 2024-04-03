@@ -88,6 +88,7 @@ class TemporalAffectiveInformation:
         self.empathic_emotions = []
         self.elicited_emotions = []
         self.mood = affst_cls()
+        self.event = None
         self.set_appraisal_variables()
 
     def get_temp_beliefs(self):
@@ -146,3 +147,9 @@ class TemporalAffectiveInformation:
 
     def set_mood(self, mood):
         self.mood = mood
+
+    def set_event(self, event):
+        self.event = event
+
+    def get_event(self, event):
+        return self.event

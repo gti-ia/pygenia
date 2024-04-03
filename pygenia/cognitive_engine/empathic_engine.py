@@ -13,9 +13,12 @@ LOGGER = agentspeak.get_logger(__name__)
 C = {}
 
 
-class DefaultEngine(EmotionalEngine):
+class EmpathicEngine(EmotionalEngine):
     def __init__(self, agent, affst_cls):
         super().__init__(agent=agent, affst_cls=affst_cls)
+        self.subject = None
+        self.target = None
+        self.interaction_value = None
 
     def affective_transition_system(self):
         """
@@ -29,10 +32,10 @@ class DefaultEngine(EmotionalEngine):
 
         options = {
             "EvClass": self.event_classification,
-            "EmphAppr": self.empathic_appraisal,
-            "EmphReg": self.empathic_regulation,
-            "EmReg": self.empathic_regulation,
-            "EmSel": self.emotion_selection,
+            # "EmphAppr": self.empathic_appraisal,
+            # "EmphReg": self.empathic_regulation,
+            # "EmReg": self.empathic_regulation,
+            # "EmSel": self.emotion_selection,
             "Appr": self.applyAppraisal,
             "UpAs": self.applyUpdateAffState,
             "SelCs": self.applySelectCopingStrategy,
@@ -45,14 +48,78 @@ class DefaultEngine(EmotionalEngine):
 
         return True
 
+    def event_classification(self) -> bool:
+        self.subject = None
+        self.target = None
+        self.interaction_value = None
+        if True:  # while self.lock instead of True for the real implementation
+            if self.event_queue:
+                event = self.event_queue.pop()
+                self.affective_info.set_event(event)
+
+        return True
+
+    def estimate_concern_value(self, concerns, event):
+        concernVal = None
+        # This function return the first concern of the agent
+        concern = concerns[("concern__", 1)][0]
+
+        if concern != None:
+            if event[1].name == "addition":
+                # adding the new literal if the event is an addition of a belief
+                concernVal = self.applyConcernForAddition(event, concern)
+            else:
+                concernVal = self.applyConcernForDeletion(event, concern)
+
+            if concernVal != None:
+                if float(concernVal) < 0 or float(concernVal) > 1:
+                    concernVal = 0
+        return float(concernVal)
+
+    def get_subject(self, event):
+        if event is not None:
+            for annotation in event[0].annots:
+                if annotation.functor == "subject":
+                    for subject in annotation.args:
+                        if (
+                            subject.functor == self.agent.name
+                            or subject.functor == "self"
+                        ):
+                            return "self"
+                    return annotation.args
+        return None
+
+    def get_target(self, event):
+        if event is not None:
+            for annotation in event[0].annots:
+                if annotation.functor == "target":
+                    return annotation.args
+        return None
+
+    def get_interaction_value(self, event):
+        if event is not None:
+            for annotation in event[0].annots:
+                if annotation.functor == "interaction_value":
+                    return annotation.args
+        return 0
+
+    def is_affective_relevant(self, event) -> bool:
+        if event is not None:
+            for annotation in event[0].annots:
+                if annotation.functor == "affective_relevant":
+                    return True
+        return False
+
     def applyAppraisal(self) -> bool:
         """
         This method is used to apply the appraisal process.
         """
+        self.event = None
         ped = PairEventDesirability(None)
         if True:  # while self.lock instead of True for the real implementation
             if self.event_queue:
                 ped.event = self.event_queue.pop()
+                self.event = ped.event
 
         if ped.event == None:
             self.appraisal(None, 0.0, self.concerns)

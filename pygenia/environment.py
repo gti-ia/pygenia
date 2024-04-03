@@ -20,6 +20,7 @@ from pygenia.utils import (
     BuildQueryVisitor,
     TrueQuery,
 )
+import pygenia.affective_agent
 from pygenia.affective_agent import AffectiveAgent
 from pygenia.cognitive_engine.emotional_engine import Concern
 
@@ -63,7 +64,7 @@ class Environment(agentspeak.runtime.Environment):
         log = agentspeak.Log(LOGGER, 3)
         agent = agent_cls(self, self._make_name(name or source.name))
 
-        if agent_cls is pygenia.affective_agent.AffectiveAgent:
+        if isinstance(agent, pygenia.affective_agent.AffectiveAgent):
             # Add personality and rationality level to agent prototype.
             agent.set_emotional_engine(em_engine_cls, affst_cls)
             if affst_parameters is not None:
