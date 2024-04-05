@@ -9,7 +9,7 @@ import agentspeak.stdlib
 import agentspeak.util
 from agentspeak.runtime import Agent, BuildTermVisitor, Intention
 
-
+from agentspeak import UnaryOp
 import pygenia.lexer
 import pygenia.parser
 import pygenia.stdlib
@@ -42,7 +42,6 @@ class EmpathicEnvironment(pygenia.environment.Environment):
         em_engine_cls=pygenia.cognitive_engine.default_engine.DefaultEngine,
         affst_cls=pygenia.emotion_models.pad.PAD,
         affst_parameters=None,
-        others=None,
     ):
         """
         This method is used to build the agent from the ast
@@ -66,8 +65,24 @@ class EmpathicEnvironment(pygenia.environment.Environment):
         )
 
         if isinstance(agent, pygenia.empathic_agent.EmpathicAgent):
+
             if ast_agent.others is not None:
-                agent.set_others(others)
+                dict_others = {}
+                for other in ast_agent.others.other_agents:
+                    dict_others.setdefault(other, {})
+                    for attribute in ast_agent.others.other_agents[other]:
+
+                        term = agentspeak.evaluate(
+                            ast_agent.others.other_agents[other][attribute], {}
+                        )
+                        if isinstance(term, agentspeak.parser.AstUnaryOp):
+                            if term.operator == UnaryOp.op_neg:
+                                dict_others[other].setdefault(
+                                    attribute, term.operand.value * -1
+                                )
+                        else:
+                            dict_others[other].setdefault(attribute, term.value)
+                agent.set_others(dict_others)
             else:
                 agent.set_others({})
 
@@ -83,7 +98,6 @@ class EmpathicEnvironment(pygenia.environment.Environment):
         em_engine_cls=pygenia.cognitive_engine.default_engine.DefaultEngine,
         affst_cls=pygenia.emotion_models.pad.PAD,
         affst_parameters=None,
-        others=None,
     ):
         # Parse source.
         log = agentspeak.Log(LOGGER, 3)
@@ -101,7 +115,6 @@ class EmpathicEnvironment(pygenia.environment.Environment):
             em_engine_cls,
             affst_cls,
             affst_parameters,
-            others,
         )
 
     def build_agents(
@@ -115,7 +128,6 @@ class EmpathicEnvironment(pygenia.environment.Environment):
         em_engine_cls=pygenia.cognitive_engine.default_engine.DefaultEngine,
         affst_cls=pygenia.emotion_models.pad.PAD,
         affst_parameters=None,
-        others=None,
     ):
         if n <= 0:
             return []
@@ -128,7 +140,6 @@ class EmpathicEnvironment(pygenia.environment.Environment):
             em_engine_cls=em_engine_cls,
             affst_cls=affst_cls,
             affst_parameters=affst_parameters,
-            others=others,
         )
 
         # Create more instances from the prototype, but with their own

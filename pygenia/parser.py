@@ -1071,6 +1071,12 @@ class ConstFoldVisitor(object):
         )
         return ast_concern
 
+    def visit_others(self, ast_others):
+        return ast_others
+
+    def visit_other_agent(self, ast_other_agent):
+        return ast_other_agent
+
     def visit_list(self, ast_list):
         term_visitor = TermFoldVisitor(self.log)
         ast_list.terms = [term.accept(term_visitor) for term in ast_list.terms]
