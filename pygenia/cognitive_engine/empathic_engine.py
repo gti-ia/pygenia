@@ -52,12 +52,12 @@ class EmpathicEngine(EmotionalEngine):
         self.event = None
         if True:  # while self.lock instead of True for the real implementation
             if self.event_queue:
-                event = self.event_queue.pop()
-                self.affective_info.set_event(event)
-                self.subject = self.get_subject(event)
-                self.target = self.get_target(event)
-                self.interaction_value = self.get_interaction_value(event)
-                if self.is_affective_relevant(event):
+                self.event = self.event_queue.pop()
+                self.affective_info.set_event(self.event)
+                self.subject = self.get_subject(self.event)
+                self.target = self.get_target(self.event)
+                self.interaction_value = self.get_interaction_value(self.event)
+                if self.is_affective_relevant(self.event):
                     if self.target not in ["self", None]:
                         self.agent.update_affective_link(
                             self.target, self.interaction_value
@@ -83,7 +83,7 @@ class EmpathicEngine(EmotionalEngine):
         #        ped.event = self.event_queue.pop()
         #        self.event = ped.event
 
-        if self.event == None:
+        if self.event is None:
             self.appraisal(None, 0.0, self.concerns)
             self.currentEvent = None
             self.eventProcessedInCycle = False
