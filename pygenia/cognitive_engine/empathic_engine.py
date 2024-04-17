@@ -49,86 +49,48 @@ class EmpathicEngine(EmotionalEngine):
         return True
 
     def event_classification(self) -> bool:
-        self.subject = None
-        self.target = None
-        self.interaction_value = None
+        self.event = None
         if True:  # while self.lock instead of True for the real implementation
             if self.event_queue:
                 event = self.event_queue.pop()
                 self.affective_info.set_event(event)
-
-        return True
-
-    def estimate_concern_value(self, concerns, event):
-        concernVal = None
-        # This function return the first concern of the agent
-        concern = concerns[("concern__", 1)][0]
-
-        if concern != None:
-            if event[1].name == "addition":
-                # adding the new literal if the event is an addition of a belief
-                concernVal = self.applyConcernForAddition(event, concern)
-            else:
-                concernVal = self.applyConcernForDeletion(event, concern)
-
-            if concernVal != None:
-                if float(concernVal) < 0 or float(concernVal) > 1:
-                    concernVal = 0
-        return float(concernVal)
-
-    def get_subject(self, event):
-        return self.get_annotation_correspondence(self, event, "subject")
-
-    def get_target(self, event):
-        return self.get_annotation_correspondence(self, event, "target")
-
-    def get_annotation_correspondence(self, event, correspondence):
-        if event is not None:
-            for annotation in event[0].annots:
-                if annotation.functor == correspondence:
-                    for subject in annotation.args:
-                        if (
-                            subject.functor == self.agent.name
-                            or subject.functor == "self"
-                        ):
-                            return "self"
-                    return annotation.args
-            return "self"
-        return None
-
-    def get_interaction_value(self, event):
-        if event is not None:
-            for annotation in event[0].annots:
-                if annotation.functor == "interaction_value":
-                    return annotation.args
-        return 0
-
-    def is_affective_relevant(self, event) -> bool:
-        if event is not None:
-            for annotation in event[0].annots:
-                if annotation.functor == "affective_relevant":
+                self.subject = self.get_subject(event)
+                self.target = self.get_target(event)
+                self.interaction_value = self.get_interaction_value(event)
+                if self.is_affective_relevant(event):
+                    if self.target not in ["self", None]:
+                        self.agent.update_affective_link(
+                            self.target, self.interaction_value
+                        )
+                        self.current_step_ast = "EmphAppr"
+                    else:
+                        self.current_step_ast = "Appr"
                     return True
+                else:
+                    if self.target == "self" and self.subject not in ["self", None]:
+                        self.agent.update_affective_link(self.subject)
+                    return False
         return False
 
     def applyAppraisal(self) -> bool:
         """
         This method is used to apply the appraisal process.
         """
-        self.event = None
-        ped = PairEventDesirability(None)
-        if True:  # while self.lock instead of True for the real implementation
-            if self.event_queue:
-                ped.event = self.event_queue.pop()
-                self.event = ped.event
+        # self.event = None
+        # ped = PairEventDesirability(None)
+        # if True:  # while self.lock instead of True for the real implementation
+        #    if self.event_queue:
+        #        ped.event = self.event_queue.pop()
+        #        self.event = ped.event
 
-        if ped.event == None:
+        if self.event == None:
             self.appraisal(None, 0.0, self.concerns)
             self.currentEvent = None
             self.eventProcessedInCycle = False
         else:
             # TODO this cannot be a random value it must be calculated by the test_concern function
-            self.appraisal(ped.event, random.random(), self.concerns)
-            self.currentEvent = ped.event
+            self.appraisal(self.event, random.random(), self.concerns)
+            self.currentEvent = self.event
             self.eventProcessedInCycle = True
 
         if self.cleanAffectivelyRelevantEvents():
@@ -408,6 +370,57 @@ class EmpathicEngine(EmotionalEngine):
         This method is used to update the affective state.
         """
         self.affective_info.get_mood().update_affective_state(self.affective_info)
+
+    def estimate_concern_value(self, concerns, event):
+        concernVal = None
+        # This function return the first concern of the agent
+        concern = concerns[("concern__", 1)][0]
+
+        if concern != None:
+            if event[1].name == "addition":
+                # adding the new literal if the event is an addition of a belief
+                concernVal = self.applyConcernForAddition(event, concern)
+            else:
+                concernVal = self.applyConcernForDeletion(event, concern)
+
+            if concernVal != None:
+                if float(concernVal) < 0 or float(concernVal) > 1:
+                    concernVal = 0
+        return float(concernVal)
+
+    def get_subject(self, event):
+        return self.get_annotation_correspondence(event, "subject")
+
+    def get_target(self, event):
+        return self.get_annotation_correspondence(event, "target")
+
+    def get_annotation_correspondence(self, event, correspondence):
+        if event is not None:
+            for annotation in event[0].annots:
+                if annotation.functor == correspondence:
+                    for subject in annotation.args:
+                        if (
+                            subject.functor == self.agent.name
+                            or subject.functor == "self"
+                        ):
+                            return "self"
+                    return annotation.args
+            return "self"
+        return None
+
+    def get_interaction_value(self, event):
+        if event is not None:
+            for annotation in event[0].annots:
+                if annotation.functor == "interaction_value":
+                    return annotation.args
+        return 0
+
+    def is_affective_relevant(self, event) -> bool:
+        if event is not None:
+            for annotation in event[0].annots:
+                if annotation.functor == "affective_relevant":
+                    return True
+        return False
 
 
 class PairEventDesirability:

@@ -9,10 +9,10 @@ others__: { lily: [ affective_link: 0.9 ],
 
 +!start
 <-
-+weather(sunny)[subject(lily), target(barney)];
++weather(sunny)[subject(lily), target(self),affective_relevant];
 !express_emotion;
 -weather(sunny);
-+weather(cloudy);
++weather(cloudy)[subject(lily), target(self),affective_relevant];
 !express_emotion.
 
 +weather(X)
