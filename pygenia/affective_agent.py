@@ -85,6 +85,11 @@ class AffectiveAgent(agentspeak.runtime.Agent):
 
         self.event_queue = []
 
+        self.personality_emotion_matrix = {}
+
+    def set_personality_emotion_matrix(self, personality_emotion_matrix):
+        self.personality_emotion_matrix = personality_emotion_matrix
+
     def set_emotional_engine(self, em_engine_cls, affst_cls):
         self.emotional_engine = em_engine_cls(agent=self, affst_cls=affst_cls)
         self.emotional_engine.set_circumstance(self.circumstance)

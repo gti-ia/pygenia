@@ -50,6 +50,7 @@ class Environment(agentspeak.runtime.Environment):
         em_engine_cls=pygenia.cognitive_engine.default_engine.DefaultEngine,
         affst_cls=pygenia.emotion_models.pad.PAD,
         affst_parameters=None,
+        personality_emotion_matrix=None,
     ):
         """
         This method is used to build the agent from the ast
@@ -66,6 +67,7 @@ class Environment(agentspeak.runtime.Environment):
 
         if isinstance(agent, pygenia.affective_agent.AffectiveAgent):
             # Add personality and rationality level to agent prototype.
+            agent.set_personality_emotion_matrix(personality_emotion_matrix)
             agent.set_emotional_engine(em_engine_cls, affst_cls)
             if affst_parameters is not None:
                 agent.emotional_engine.affective_info.get_mood().init_parameters(
@@ -195,6 +197,7 @@ class Environment(agentspeak.runtime.Environment):
         em_engine_cls=pygenia.cognitive_engine.default_engine.DefaultEngine,
         affst_cls=pygenia.emotion_models.pad.PAD,
         affst_parameters=None,
+        personality_emotion_matrix=None,
     ):
         # Parse source.
         log = agentspeak.Log(LOGGER, 3)
@@ -212,6 +215,7 @@ class Environment(agentspeak.runtime.Environment):
             em_engine_cls,
             affst_cls,
             affst_parameters,
+            personality_emotion_matrix,
         )
 
     def build_agents(
@@ -225,6 +229,7 @@ class Environment(agentspeak.runtime.Environment):
         em_engine_cls=pygenia.cognitive_engine.default_engine.DefaultEngine,
         affst_cls=pygenia.emotion_models.pad.PAD,
         affst_parameters=None,
+        personality_emotion_matrix=None,
     ):
         if n <= 0:
             return []
@@ -237,6 +242,7 @@ class Environment(agentspeak.runtime.Environment):
             em_engine_cls=em_engine_cls,
             affst_cls=affst_cls,
             affst_parameters=affst_parameters,
+            personality_emotion_matrix=personality_emotion_matrix,
         )
 
         # Create more instances from the prototype, but with their own

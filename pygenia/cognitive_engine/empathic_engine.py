@@ -77,9 +77,15 @@ class EmpathicEngine(EmotionalEngine):
         return float(concernVal)
 
     def get_subject(self, event):
+        return self.get_annotation_correspondence(self, event, "subject")
+
+    def get_target(self, event):
+        return self.get_annotation_correspondence(self, event, "target")
+
+    def get_annotation_correspondence(self, event, correspondence):
         if event is not None:
             for annotation in event[0].annots:
-                if annotation.functor == "subject":
+                if annotation.functor == correspondence:
                     for subject in annotation.args:
                         if (
                             subject.functor == self.agent.name
@@ -87,13 +93,7 @@ class EmpathicEngine(EmotionalEngine):
                         ):
                             return "self"
                     return annotation.args
-        return None
-
-    def get_target(self, event):
-        if event is not None:
-            for annotation in event[0].annots:
-                if annotation.functor == "target":
-                    return annotation.args
+            return "self"
         return None
 
     def get_interaction_value(self, event):
