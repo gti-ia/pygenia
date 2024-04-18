@@ -19,6 +19,7 @@ class EmpathicEngine(EmotionalEngine):
         self.subject = None
         self.target = None
         self.interaction_value = None
+        self.concern_value = None
 
     def affective_transition_system(self):
         """
@@ -50,6 +51,7 @@ class EmpathicEngine(EmotionalEngine):
 
     def event_classification(self) -> bool:
         self.event = None
+        self.concern_value = None
         if True:  # while self.lock instead of True for the real implementation
             if self.event_queue:
                 self.event = self.event_queue.pop()
@@ -384,9 +386,13 @@ class EmpathicEngine(EmotionalEngine):
                 concernVal = self.applyConcernForDeletion(event, concern)
 
             if concernVal != None:
-                if float(concernVal) < 0 or float(concernVal) > 1:
-                    concernVal = 0
-        return float(concernVal)
+                concernVal = float(concernVal)
+                if concernVal < 0:
+                    concernVal = 0.0
+                elif concernVal > 1:
+                    concernVal = 1.0
+
+        return concernVal
 
     def get_subject(self, event):
         return self.get_annotation_correspondence(event, "subject")
@@ -417,6 +423,9 @@ class EmpathicEngine(EmotionalEngine):
 
     def is_affective_relevant(self, event) -> bool:
         if event is not None:
+            self.concern_value = self.estimate_concern_value(self.concerns, event)
+            if self.concern_value is not None:
+                return True
             for annotation in event[0].annots:
                 if annotation.functor == "affective_relevant":
                     return True
