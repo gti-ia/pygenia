@@ -35,7 +35,7 @@ class EmpathicEngine(EmotionalEngine):
             "EvClass": self.event_classification,
             # "EmphAppr": self.empathic_appraisal,
             # "EmphReg": self.empathic_regulation,
-            # "EmReg": self.empathic_regulation,
+            "EmReg": self.emotion_regulation,
             # "EmSel": self.emotion_selection,
             "Appr": self.applyAppraisal,
             "UpAs": self.applyUpdateAffState,
@@ -74,6 +74,11 @@ class EmpathicEngine(EmotionalEngine):
                     return False
         return False
 
+    def emotion_regulation(self):
+        self.affective_info.get_elicited_emotions()
+        self.current_step_ast = "UpAs"
+        pass
+
     def applyAppraisal(self) -> bool:
         """
         This method is used to apply the appraisal process.
@@ -91,7 +96,7 @@ class EmpathicEngine(EmotionalEngine):
             self.eventProcessedInCycle = False
         else:
             # TODO this cannot be a random value it must be calculated by the test_concern function
-            self.appraisal(self.event, random.random(), self.concerns)
+            self.appraisal(self.event, self.concern_value, self.concerns)
             self.currentEvent = self.event
             self.eventProcessedInCycle = True
 
@@ -99,7 +104,7 @@ class EmpathicEngine(EmotionalEngine):
             self.Mem = []
 
         # The next step is Update Aff State
-        self.current_step_ast = "UpAs"
+        self.current_step_ast = "EmReg"
         return True
 
     def applyUpdateAffState(self):
@@ -241,7 +246,6 @@ class EmpathicEngine(EmotionalEngine):
             self.affective_info.get_appraisal_variables()["controllability"] = None
 
         self.affective_info.get_mood().estimate_emotion(self.affective_info)
-
         return result
 
     def controllability(self, event, concernsValue, desirability):
@@ -350,22 +354,7 @@ class EmpathicEngine(EmotionalEngine):
         Returns:
             float: Desirability of the event.
         """
-        concernVal = None
-        # This function return the first concern of the agent
-        concern = concerns[("concern__", 1)][0]
-
-        if concern != None:
-            if event[1].name == "addition":
-                # adding the new literal if the event is an addition of a belief
-                concernVal = self.applyConcernForAddition(event, concern)
-            else:
-                concernVal = self.applyConcernForDeletion(event, concern)
-
-            if concernVal != None:
-                if float(concernVal) < 0 or float(concernVal) > 1:
-                    concernVal = 0
-
-        return float(concernVal)
+        return self.concern_value
 
     def update_affective_state(self):
         """
