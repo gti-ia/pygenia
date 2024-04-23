@@ -75,9 +75,14 @@ class EmpathicEngine(EmotionalEngine):
         return False
 
     def emotion_regulation(self):
-        self.affective_info.get_elicited_emotions()
+        regulated_emotions = []
+        for emotion in self.affective_info.get_elicited_emotions():
+            regulated_emotions.append(
+                self.agent.personality.emotion_regulation(emotion)
+            )
+        self.affective_info.set_elicited_emotions(regulated_emotions)
         self.current_step_ast = "UpAs"
-        pass
+        return True
 
     def applyAppraisal(self) -> bool:
         """

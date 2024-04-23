@@ -46,24 +46,32 @@ class PAModel(AffectiveState):
     ):
         if parameters is None:
             parameters = [
-                "pa_language_models/spanish_emotions.csv",
-                "pa_language_models/spanish_intensity.csv",
-                "pa_language_models/spanish_appraisal.csv",
+                "spanish",
             ]
 
-        if len(parameters) < 3:
+        if len(parameters) < 1:
             raise IndexError(
-                "PA parameters must have 3 components give: '%d'" % len(parameters)
+                "PA parameters must have 1 components give: '%d'" % len(parameters)
             )
 
-        self.emotion_parameters = self.load_csv(os.path.join(this_path, parameters[0]))
+        self.emotion_parameters = self.load_csv(
+            os.path.join(
+                this_path, "pa_language_models/emotion_label/" + parameters[0] + ".csv"
+            )
+        )
 
         self.intensity_parameters = self.load_csv(
-            os.path.join(this_path, parameters[1])
+            os.path.join(
+                this_path,
+                "pa_language_models/emotion_intensity/" + parameters[0] + ".csv",
+            )
         )
 
         self.appraisal_parameters = self.load_csv(
-            os.path.join(this_path, parameters[2])
+            os.path.join(
+                this_path,
+                "pa_language_models/appraisal_variables/" + parameters[0] + ".csv",
+            )
         )
         self.stimate_min_max()
 

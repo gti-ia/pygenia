@@ -76,8 +76,10 @@ class Environment(agentspeak.runtime.Environment):
             else:
                 agent.emotional_engine.affective_info.get_mood().init_parameters()
             if ast_agent.personality is not None:
+                agent.set_personality_cls(personality_cls)
                 agent.personality.set_personality(
-                    personality_cls, ast_agent.personality.traits
+                    attributes_dict=ast_agent.personality.traits,
+                    parameters=affst_parameters,
                 )
                 agent.personality.set_rationality_level(
                     ast_agent.personality.rationality_level

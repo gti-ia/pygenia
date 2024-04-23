@@ -1,6 +1,3 @@
-from pygenia.personality.ocean_personality import OceanPersonality
-
-
 class Personality:
     """
     This class is used to represent the personality of the agent.
@@ -11,19 +8,34 @@ class Personality:
         """
         Constructor of the Personality class.
         """
-        self.personality_cls = None
         self.rationalityLevel = 0.0
         self.copingStrategies = []
+        self.personality_parameters = None
+        self.traits = None
 
-    def set_personality(self, personality_cls=None, attributes_dict=None):
+    def get_traits(self):
+        return self.traits
+
+    def get_personality_parameters(self):
+        return self.personality_parameters
+
+    def emotion_regulation(self, emotion):
+        return emotion
+
+    def set_personality(self, attributes_dict=None, parameters=None):
         """
         This method is used to initialize the personality of the agent.
         """
-        if personality_cls is None:
-            personality_cls = OceanPersonality
-        self.personality_cls = personality_cls()
         if attributes_dict is not None:
-            self.personality_cls.init(attributes_dict)
+            self.init_attributes(attributes_dict)
+
+        self.init_parameters(parameters)
+
+    def init_attributes(self, attributes):
+        pass
+
+    def init_parameters(self, parameters):
+        self.personality_parameters = parameters
 
     def clone(self):
         """

@@ -73,7 +73,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
 
         self.rational_cycle.set_circumstance(self.circumstance)
 
-        self.personality = pygenia.personality.personality.Personality()
+        self.personality = None
 
         # Concerns definition
         self.concerns = (
