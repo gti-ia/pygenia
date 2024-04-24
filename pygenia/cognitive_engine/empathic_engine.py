@@ -7,6 +7,7 @@ import agentspeak.runtime
 import agentspeak.stdlib
 import agentspeak.util
 from pygenia.emotion_models.affective_state import AffectiveState
+from pygenia.emotion_models.pa import Point
 
 
 LOGGER = agentspeak.get_logger(__name__)
@@ -20,6 +21,9 @@ class EmpathicEngine(EmotionalEngine):
         self.target = None
         self.interaction_value = None
         self.concern_value = None
+        self.Mem = []
+        self.empathic_emotions = []
+        self.selected_emotions = []
 
     def affective_transition_system(self):
         """
@@ -33,14 +37,12 @@ class EmpathicEngine(EmotionalEngine):
 
         options = {
             "EvClass": self.event_classification,
-            # "EmphAppr": self.empathic_appraisal,
-            # "EmphReg": self.empathic_regulation,
+            "EmphAppr": self.empathic_appraisal,
+            "EmphReg": self.empathic_regulation,
             "EmReg": self.emotion_regulation,
-            # "EmSel": self.emotion_selection,
+            "EmSel": self.emotion_selection,
             "Appr": self.applyAppraisal,
             "UpAs": self.applyUpdateAffState,
-            "SelCs": self.applySelectCopingStrategy,
-            "Cope": self.applyCope,
         }
 
         flag = True
@@ -60,6 +62,7 @@ class EmpathicEngine(EmotionalEngine):
                 self.target = self.get_target(self.event)
                 self.interaction_value = self.get_interaction_value(self.event)
                 if self.is_affective_relevant(self.event):
+                    self.Mem.append(self.event)
                     if self.target not in ["self", None]:
                         self.agent.update_affective_link(
                             self.target, self.interaction_value
@@ -73,16 +76,6 @@ class EmpathicEngine(EmotionalEngine):
                         self.agent.update_affective_link(self.subject)
                     return False
         return False
-
-    def emotion_regulation(self):
-        regulated_emotions = []
-        for emotion in self.affective_info.get_elicited_emotions():
-            regulated_emotions.append(
-                self.agent.personality.emotion_regulation(emotion)
-            )
-        self.affective_info.set_elicited_emotions(regulated_emotions)
-        self.current_step_ast = "UpAs"
-        return True
 
     def applyAppraisal(self) -> bool:
         """
@@ -100,16 +93,61 @@ class EmpathicEngine(EmotionalEngine):
             self.currentEvent = None
             self.eventProcessedInCycle = False
         else:
-            # TODO this cannot be a random value it must be calculated by the test_concern function
             self.appraisal(self.event, self.concern_value, self.concerns)
             self.currentEvent = self.event
             self.eventProcessedInCycle = True
 
-        if self.cleanAffectivelyRelevantEvents():
-            self.Mem = []
-
         # The next step is Update Aff State
         self.current_step_ast = "EmReg"
+        return True
+
+    def empathic_appraisal(self):
+        if self.event is None:
+            self.appraisal(None, 0.0, self.concerns)
+            self.currentEvent = None
+            self.eventProcessedInCycle = False
+        else:
+            self.appraisal(self.event, self.concern_value, self.concerns)
+            self.currentEvent = self.event
+            self.eventProcessedInCycle = True
+        self.current_step_ast = "EmphReg"
+        return True
+
+    def empathic_regulation(self):
+        regulated_emotions = []
+        affective_link = self.agent.get_other(self.subject)
+        for emotion in self.affective_info.get_elicited_emotions():
+            regulated_emotion: Point = self.agent.personality.emotion_regulation(
+                emotion
+            )
+            regulated_emotion.set_pleasure(
+                regulated_emotion.get_pleasure() * affective_link
+            )
+            regulated_emotion.set_arousal(
+                regulated_emotion.get_arousal() * affective_link
+            )
+            regulated_emotions.append(regulated_emotion)
+        self.affective_info.set_elicited_emotions(regulated_emotions)
+        self.current_step_ast = "EmSel"
+        return True
+
+    def emotion_regulation(self):
+        regulated_emotions = []
+        for emotion in self.affective_info.get_elicited_emotions():
+            regulated_emotions.append(
+                self.agent.personality.emotion_regulation(emotion)
+            )
+        self.affective_info.set_elicited_emotions(regulated_emotions)
+        self.current_step_ast = "EmSel"
+        return True
+
+    def emotion_selection(self):
+        self.selected_emotions = []
+        for emotion in self.affective_info.get_elicited_emotions():
+            self.selected_emotions.append(
+                self.affective_info.get_mood().fuzzify_emotion(emotion)
+            )
+        self.current_step_ast = "UpAs"
         return True
 
     def applyUpdateAffState(self):
@@ -118,89 +156,7 @@ class EmpathicEngine(EmotionalEngine):
         """
         if self.eventProcessedInCycle:
             self.update_affective_state()
-        if self.isAffectRelevantEvent(self.currentEvent):
-            self.Mem.append(self.currentEvent)
-        self.current_step_ast = "SelCs"
-        return True
-
-    def selectCs(self):
-        """
-        This method is used to select the coping strategy.
-        """
-        """
-        AClabel = self.C["AfE"]
-        logCons = False
-        asContainsCs = False
-        if len(AClabel) != 0 and self.Ag["P"].getCopingStrategies() != None:
-            for cs in self.Ag["P"].getCopingStrategies():
-                if cs.getAffectCategory().name in AClabel:
-                    logCons = cs.getContext().logicalConsequence(self.ag).hasNext()
-                    if logCons:
-                        self.C["CS"].append(cs)
-                    asContainsCs = True
-            if asContainsCs:
-                self.C["AfE"] = []
-        """
-        pass
-
-    def applyCope(self):
-        """
-        This method is used to apply the coping process.
-        """
-
-        SelectingCs = True
-        while SelectingCs and self.affective_info.coping_strategies:
-            SelectingCs = self.cope()
-        # self.current_step_ast = "Appr"
         return False
-
-    def cleanAffectivelyRelevantEvents(self) -> bool:
-        return True
-
-    def cope(self):
-        """
-        This method is used to apply the coping process.
-
-        Returns:
-            bool: True if the coping strategy was applied, False otherwise.
-        """
-
-        if self.affective_info.coping_strategies:
-            cs = self.affective_info.coping_strategies.pop(0)
-            self.affective_info.coping_strategies.append(cs)
-            return True
-        else:
-            return False
-
-    def applySelectCopingStrategy(self):
-        """
-        This method is used to select the coping strategy.
-        Personality parser is not implemented yet.
-
-        Returns:
-            bool: True if the coping strategy was selected, False otherwise.
-        """
-        self.affective_info.coping_strategies = []
-        # self.selectCs()
-        self.current_step_ast = "Cope"
-        return True
-
-    def isAffectRelevantEvent(self, currentEvent):
-        """
-        This method is used to check if the event is affect relevant.
-
-        Args:
-            currentEvent (tuple): Event to be checked.
-
-        Returns:
-            bool: True if the event is affect relevant, False otherwise.
-        """
-        result = currentEvent != None
-
-        # for ex in self.affective_info.get_mood().affRevEventThreshold:
-        #    result = result and self.affective_info.get_mood().is_affective_relevant(ex)
-
-        return result
 
     def appraisal(self, event, concern_value, concerns):
         """
@@ -365,7 +321,8 @@ class EmpathicEngine(EmotionalEngine):
         """
         This method is used to update the affective state.
         """
-        self.affective_info.get_mood().update_affective_state(self.affective_info)
+        emotions = self.affective_info.get_elicited_emotions()
+        self.affective_info.get_mood().update_affective_state(emotions)
 
     def estimate_concern_value(self, concerns, event):
         concernVal = None
@@ -424,9 +381,3 @@ class EmpathicEngine(EmotionalEngine):
                 if annotation.functor == "affective_relevant":
                     return True
         return False
-
-
-class PairEventDesirability:
-    def __init__(self, event):
-        self.event = event
-        self.av = {}

@@ -80,14 +80,14 @@ class PAModel(AffectiveState):
             self.deriveASFromAppraisalVariables(affective_info)
         )
 
-    def update_affective_state(self, affective_info):
+    def update_affective_state(self, emotions):
         """
         This method is used to update the affective state
 
         """
-        emotion = affective_info.get_elicited_emotions()
-        if len(emotion) > 0:
-            emotion = emotion[0]
+
+        if len(emotions) > 0:
+            emotion = emotions[0]
 
             self.mood.pleasure, self.mood.arousal = self.vector_sum(self.mood, emotion)
             self.affective_labels = self.fuzzify_emotion(self.mood)

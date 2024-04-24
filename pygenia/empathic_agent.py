@@ -29,6 +29,9 @@ class EmpathicAgent(pygenia.affective_agent.AffectiveAgent):
     def get_others(self):
         return self.others
 
+    def get_other(self, other_id: str):
+        return self.others[other_id]
+
     def update_affective_link(self, agent_id, interaction_value):
         if self.others is not None:
             if agent_id in self.others.keys():

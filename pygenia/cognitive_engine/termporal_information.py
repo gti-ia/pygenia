@@ -85,7 +85,6 @@ class TemporalAffectiveInformation:
         self.appraisal_variables = None
         self.coping_strategies = []
         self.appraised_emotions = []
-        self.empathic_emotions = []
         self.elicited_emotions = []
         self.mood = affst_cls()
         self.event = None
@@ -126,13 +125,6 @@ class TemporalAffectiveInformation:
 
     def set_appraised_emotions(self, value):
         self.appraised_emotions = value
-
-    # Getter y Setter for empathic_emotions
-    def get_empathic_emotions(self):
-        return self.empathic_emotions
-
-    def set_empathic_emotions(self, value):
-        self.empathic_emotions = value
 
     # Getter y Setter for elicited_emotions
     def get_elicited_emotions(self):
