@@ -489,6 +489,17 @@ def parse_personality(tok, tokens, log):
             raise log.error(
                 "expected a number value, got '%s'", tok.lexeme, loc=tok.loc
             )
+    # Empathic level
+    if tok.lexeme == ",":
+        tok = next(tokens)
+        try:
+            el = float(tok.lexeme)
+            personality.empathic_level = el
+            tok = next(tokens)
+        except:
+            raise log.error(
+                "expected a number value, got '%s'", tok.lexeme, loc=tok.loc
+            )
 
     if tok.lexeme != "}":
         raise log.error("expected }, got '%s'", tok.lexeme, loc=tok.loc)
@@ -723,6 +734,8 @@ class AstPersonality(AstNode):
         super(AstPersonality, self).__init__()
         self.traits = {}
         self.rationality_level = None
+        # Empatic level
+        self.empathic_level = None
 
     def accept(self, visitor):
         return visitor.visit_personality(self)

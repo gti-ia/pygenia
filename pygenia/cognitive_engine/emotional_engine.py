@@ -26,6 +26,7 @@ class EmotionalEngine:
         self.current_step_ast = None
         self.agent = agent
         self.affective_lavels = []
+        self.concern_value = None
 
     def set_agent(self, agent):
         self.agent = agent
@@ -139,6 +140,10 @@ class EmotionalEngine:
             for intention in self.circumstance.get_intentions()
             if intention and intention[-1].waiter
         )
+
+    def get_concern_value(self):
+        print("---___", self.concern_value)
+        return self.concern_value
 
 
 class Concern:

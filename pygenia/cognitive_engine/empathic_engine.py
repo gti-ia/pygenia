@@ -20,7 +20,7 @@ class EmpathicEngine(EmotionalEngine):
         self.subject = None
         self.target = None
         self.interaction_value = None
-        self.concern_value = None
+        self.empathic_concern_value = None
         self.Mem = []
         self.empathic_emotions = []
         self.selected_emotions = []
@@ -53,7 +53,7 @@ class EmpathicEngine(EmotionalEngine):
 
     def event_classification(self) -> bool:
         self.event = None
-        self.concern_value = None
+        # self.concern_value = 0.0
         if True:  # while self.lock instead of True for the real implementation
             if self.event_queue:
                 self.event = self.event_queue.pop()
@@ -102,12 +102,18 @@ class EmpathicEngine(EmotionalEngine):
         return True
 
     def empathic_appraisal(self):
+        affective_link = self.agent.get_other(self.target)
+        self.empathic_concern_value = (
+            self.concern_value
+            * affective_link
+            * self.agent.personality.get_empathic_level()
+        )
         if self.event is None:
             self.appraisal(None, 0.0, self.concerns)
             self.currentEvent = None
             self.eventProcessedInCycle = False
         else:
-            self.appraisal(self.event, self.concern_value, self.concerns)
+            self.appraisal(self.event, self.empathic_concern_value, self.concerns)
             self.currentEvent = self.event
             self.eventProcessedInCycle = True
         self.current_step_ast = "EmphReg"
@@ -115,16 +121,20 @@ class EmpathicEngine(EmotionalEngine):
 
     def empathic_regulation(self):
         regulated_emotions = []
-        affective_link = self.agent.get_other(self.subject)
+        affective_link = self.agent.get_other(self.target)
         for emotion in self.affective_info.get_elicited_emotions():
             regulated_emotion: Point = self.agent.personality.emotion_regulation(
                 emotion
             )
             regulated_emotion.set_pleasure(
-                regulated_emotion.get_pleasure() * affective_link
+                regulated_emotion.get_pleasure()
+                * affective_link
+                * self.agent.personality.get_empathic_level()
             )
             regulated_emotion.set_arousal(
-                regulated_emotion.get_arousal() * affective_link
+                regulated_emotion.get_arousal()
+                * affective_link
+                * self.agent.personality.get_empathic_level()
             )
             regulated_emotions.append(regulated_emotion)
         self.affective_info.set_elicited_emotions(regulated_emotions)
@@ -381,3 +391,6 @@ class EmpathicEngine(EmotionalEngine):
                 if annotation.functor == "affective_relevant":
                     return True
         return False
+
+    def get_empathic_concern_value(self):
+        return self.empathic_concern_value

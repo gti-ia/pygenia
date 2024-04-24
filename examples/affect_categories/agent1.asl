@@ -1,6 +1,6 @@
 concern__(X) :- weather(cloudy) & X=0.5 | weather(sunny) & X=1 .
 
-personality__: {[O:0.0,C:0.0,E:1.0,A:0.0,N:0.1], 0.6}.
+personality__: {[O:0.0,C:0.0,E:1.0,A:0.0,N:0.1], 0.6,1.0}.
 
 others__: { lily: [ affective_link: 0.9 ],
         barney: [ affective_link: -0.5 ] }.

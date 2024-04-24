@@ -328,14 +328,16 @@ class DefaultEngine(EmotionalEngine):
             if concernVal != None:
                 if float(concernVal) < 0 or float(concernVal) > 1:
                     concernVal = 0
-
+        self.concern_value = float(concernVal)
         return float(concernVal)
 
     def update_affective_state(self):
         """
         This method is used to update the affective state.
         """
-        self.affective_info.get_mood().update_affective_state(self.affective_info)
+        self.affective_info.get_mood().update_affective_state(
+            self.affective_info.get_elicited_emotions()
+        )
 
 
 class PairEventDesirability:

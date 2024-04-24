@@ -81,9 +81,14 @@ class Environment(agentspeak.runtime.Environment):
                     attributes_dict=ast_agent.personality.traits,
                     parameters=affst_parameters,
                 )
-                agent.personality.set_rationality_level(
-                    ast_agent.personality.rationality_level
-                )
+                if ast_agent.personality.rationality_level is not None:
+                    agent.personality.set_rationality_level(
+                        ast_agent.personality.rationality_level
+                    )
+                if ast_agent.personality.empathic_level is not None:
+                    agent.personality.set_empathic_level(
+                        ast_agent.personality.empathic_level
+                    )
 
         # Add rules to agent prototype.
         for ast_rule in ast_agent.rules:

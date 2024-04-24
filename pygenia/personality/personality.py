@@ -8,7 +8,9 @@ class Personality:
         """
         Constructor of the Personality class.
         """
-        self.rationalityLevel = 0.0
+        self.rationality_level = 0.0
+        # Empathic level
+        self.empathic_level = 0.0
         self.copingStrategies = []
         self.personality_parameters = None
         self.traits = None
@@ -50,16 +52,34 @@ class Personality:
         Returns:
             float: Rationality level of the agent.
         """
-        return self.rationalityLevel
+        return self.rationality_level
 
-    def set_rationality_level(self, rationalityLevel) -> None:
+    def set_rationality_level(self, rationality_level) -> None:
         """
         This method is used to set the rationality level of the agent.
 
         Args:
-            rationalityLevel (float): Rationality level of the agent.
+            rationality_level (float): Rationality level of the agent.
         """
-        self.rationalityLevel = rationalityLevel
+        self.rationality_level = rationality_level
+
+    def get_empathic_level(self):
+        """
+        This method is used to get the empathic level of the agent.
+
+        Returns:
+            float: Empathic level of the agent.
+        """
+        return self.empathic_level
+
+    def set_empathic_level(self, empathic_level) -> None:
+        """
+        This method is used to set the empathic level of the agent.
+
+        Args:
+            empathic_level (float): Empathic level of the agent.
+        """
+        self.empathic_level = empathic_level
 
     def get_coping_strategies(self):
         """

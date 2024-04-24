@@ -44,9 +44,9 @@ class PAD(AffectiveState):
 
     def is_affective_relevant(self, event):
         event.evaluate(
-            self.getP(),
-            self.getA(),
-            self.getD(),
+            self.get_pleasure(),
+            self.get_arousal(),
+            self.get_dominance(),
         )
 
     def initAffectiveThreshold(self):
@@ -88,9 +88,9 @@ class PAD(AffectiveState):
         result = False
         if as1 is not None and as2 is not None:
             result = (
-                np.sign(as1.getP()) == np.sign(as2.getP())
-                and np.sign(as1.getA()) == np.sign(as2.getA())
-                and np.sign(as1.getD()) == np.sign(as2.getD())
+                np.sign(as1.get_pleasure()) == np.sign(as2.get_pleasure())
+                and np.sign(as1.get_arousal()) == np.sign(as2.get_arousal())
+                and np.sign(as1.get_dominance()) == np.sign(as2.get_dominance())
             )
         return result
 
@@ -110,34 +110,43 @@ class PAD(AffectiveState):
         if as1 is not None and as2 is not None:
             result = (
                 (
-                    (as1.getP() < 0 and as2.getP() > as1.getP())
-                    or (as1.getP() > 0 and as2.getP() < as1.getP())
+                    (as1.get_pleasure() < 0 and as2.get_pleasure() > as1.get_pleasure())
+                    or (
+                        as1.get_pleasure() > 0
+                        and as2.get_pleasure() < as1.get_pleasure()
+                    )
                 )
                 or (
-                    (as1.getA() < 0 and as2.getA() > as1.getA())
-                    or (as1.getA() > 0 and as2.getA() < as1.getA())
+                    (as1.get_arousal() < 0 and as2.get_arousal() > as1.get_arousal())
+                    or (as1.get_arousal() > 0 and as2.get_arousal() < as1.get_arousal())
                 )
                 or (
-                    (as1.getD() < 0 and as2.getD() > as1.getD())
-                    or (as1.getD() > 0 and as2.getD() < as1.getD())
+                    (
+                        as1.get_dominance() < 0
+                        and as2.get_dominance() > as1.get_dominance()
+                    )
+                    or (
+                        as1.get_dominance() > 0
+                        and as2.get_dominance() < as1.get_dominance()
+                    )
                 )
             )
 
         return result
 
-    def getP(self):
+    def get_pleasure(self):
         return self.affective_dimensions[self.PADlabels.pleasure]
 
     def setP(self, p):
         self.affective_dimensions[self.PADlabels.pleasure] = p
 
-    def getA(self):
+    def get_arousal(self):
         return self.affective_dimensions[self.PADlabels.arousal]
 
     def setA(self, a):
         self.affective_dimensions[self.PADlabels.arousal] = a
 
-    def getD(self):
+    def get_dominance(self):
         return self.affective_dimensions[self.PADlabels.dominance]
 
     def setD(self, d):
@@ -173,20 +182,20 @@ class PAD(AffectiveState):
 
             # Calculating the module of VEC
             VECmodule = math.sqrt(
-                math.pow(VEC.getP(), 2)
-                + math.pow(VEC.getA(), 2)
-                + math.pow(VEC.getD(), 2)
+                math.pow(VEC.get_pleasure(), 2)
+                + math.pow(VEC.get_arousal(), 2)
+                + math.pow(VEC.get_dominance(), 2)
             )
 
             # 1 Applying the pull and push of ALMA
             if PAD.betweenVECandCenter(self, VEC) or not PAD.sameOctant(self, VEC):
-                vDiff_P = VEC.getP() - self.getP()
-                vDiff_A = VEC.getA() - self.getA()
-                vDiff_D = VEC.getD() - self.getD()
+                vDiff_P = VEC.get_pleasure() - self.get_pleasure()
+                vDiff_A = VEC.get_arousal() - self.get_arousal()
+                vDiff_D = VEC.get_dominance() - self.get_dominance()
             else:
-                vDiff_P = self.getP() - VEC.getP()
-                vDiff_A = self.getA() - VEC.getA()
-                vDiff_D = self.getD() - VEC.getD()
+                vDiff_P = self.get_pleasure() - VEC.get_pleasure()
+                vDiff_A = self.get_arousal() - VEC.get_arousal()
+                vDiff_D = self.get_dominance() - VEC.get_dominance()
 
             # 2 The module of the vector VEC () is multiplied by the DISPLACEMENT and this
             # is the length that will have the vector to be added to 'as'
@@ -199,21 +208,21 @@ class PAD(AffectiveState):
 
             # 4 The vector vectorToAdd is added to 'as' and this is the new value of
             # the current affective state
-            tmpVal = self.getP() + vectorToAdd_P
+            tmpVal = self.get_pleasure() + vectorToAdd_P
             if tmpVal > 1:
                 tmpVal = 1.0
             else:
                 if tmpVal < -1:
                     tmpVal = -1.0
             self.setP(round(tmpVal * 10.0) / 10.0)
-            tmpVal = self.getA() + vectorToAdd_A
+            tmpVal = self.get_arousal() + vectorToAdd_A
             if tmpVal > 1:
                 tmpVal = 1.0
             else:
                 if tmpVal < -1:
                     tmpVal = -1.0
             self.setA(round(tmpVal * 10.0) / 10.0)
-            tmpVal = self.getD() + vectorToAdd_D
+            tmpVal = self.get_dominance() + vectorToAdd_D
             if tmpVal > 1:
                 tmpVal = 1.0
             else:
@@ -331,35 +340,35 @@ class PAD(AffectiveState):
 
         for e in em:
             if e == "anger":
-                result.setP(result.getP() - 0.51)
-                result.setA(result.getA() + 0.59)
-                result.setD(result.getD() + 0.25)
+                result.setP(result.get_pleasure() - 0.51)
+                result.setA(result.get_arousal() + 0.59)
+                result.setD(result.get_dominance() + 0.25)
             elif e == "fear":
-                result.setP(result.getP() - 0.64)
-                result.setA(result.getA() + 0.60)
-                result.setD(result.getD() - 0.43)
+                result.setP(result.get_pleasure() - 0.64)
+                result.setA(result.get_arousal() + 0.60)
+                result.setD(result.get_dominance() - 0.43)
             elif e == "hope":
-                result.setP(result.getP() + 0.2)
-                result.setA(result.getA() + 0.2)
-                result.setD(result.getD() - 0.1)
+                result.setP(result.get_pleasure() + 0.2)
+                result.setA(result.get_arousal() + 0.2)
+                result.setD(result.get_dominance() - 0.1)
             elif e == "joy":
-                result.setP(result.getP() + 0.76)
-                result.setA(result.getA() + 0.48)
-                result.setD(result.getD() + 0.35)
+                result.setP(result.get_pleasure() + 0.76)
+                result.setA(result.get_arousal() + 0.48)
+                result.setD(result.get_dominance() + 0.35)
             elif e == "sadness":
-                result.setP(result.getP() - 0.63)
-                result.setA(result.getA() - 0.27)
-                result.setD(result.getD() - 0.33)
+                result.setP(result.get_pleasure() - 0.63)
+                result.setA(result.get_arousal() - 0.27)
+                result.setD(result.get_dominance() - 0.33)
             elif e == "surprise":
-                result.setP(result.getP() + 0.4)
-                result.setA(result.getA() + 0.67)
-                result.setD(result.getD() - 0.13)
+                result.setP(result.get_pleasure() + 0.4)
+                result.setA(result.get_arousal() + 0.67)
+                result.setD(result.get_dominance() - 0.13)
 
         # Averaging
         if len(em) > 0:
-            result.setP(result.getP() / len(em))
-            result.setA(result.getA() / len(em))
-            result.setD(result.getD() / len(em))
+            result.setP(result.get_pleasure() / len(em))
+            result.setA(result.get_arousal() / len(em))
+            result.setD(result.get_dominance() / len(em))
         else:
             result = None
         return result
