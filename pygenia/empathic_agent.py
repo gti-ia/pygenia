@@ -35,9 +35,9 @@ class EmpathicAgent(pygenia.affective_agent.AffectiveAgent):
     def update_affective_link(self, agent_id, interaction_value):
         if self.others is not None:
             if agent_id in self.others.keys():
-                self.others[agent_id] += interaction_value
+                self.others[agent_id]["affective_link"] += interaction_value
             else:
-                self.others.setdefault(agent_id, interaction_value)
+                self.others.setdefault(agent_id, {"affective_link": interaction_value})
 
     def run(self, affective_turns=1, rational_turns=1) -> None:
         """

@@ -69,11 +69,17 @@ class EmpathicEngine(EmotionalEngine):
                         )
                         self.current_step_ast = "EmphAppr"
                     else:
+                        if self.target == "self" and self.subject not in ["self", None]:
+                            self.agent.update_affective_link(
+                                self.subject, self.interaction_value
+                            )
                         self.current_step_ast = "Appr"
                     return True
                 else:
                     if self.target == "self" and self.subject not in ["self", None]:
-                        self.agent.update_affective_link(self.subject)
+                        self.agent.update_affective_link(
+                            self.subject, self.interaction_value
+                        )
                     return False
         return False
 
@@ -102,12 +108,15 @@ class EmpathicEngine(EmotionalEngine):
         return True
 
     def empathic_appraisal(self):
-        affective_link = self.agent.get_other(self.target)
+        affective_link = self.agent.get_other(self.target)["affective_link"]
+        """
         self.empathic_concern_value = (
             self.concern_value
             * affective_link
             * self.agent.personality.get_empathic_level()
         )
+        """
+        self.empathic_concern_value = self.concern_value
         if self.event is None:
             self.appraisal(None, 0.0, self.concerns)
             self.currentEvent = None
@@ -121,7 +130,9 @@ class EmpathicEngine(EmotionalEngine):
 
     def empathic_regulation(self):
         regulated_emotions = []
-        affective_link = self.agent.get_other(self.target)
+        affective_link = affective_link = self.agent.get_other(self.target)[
+            "affective_link"
+        ]
         for emotion in self.affective_info.get_elicited_emotions():
             regulated_emotion: Point = self.agent.personality.emotion_regulation(
                 emotion
@@ -338,7 +349,7 @@ class EmpathicEngine(EmotionalEngine):
         concernVal = None
         # This function return the first concern of the agent
         if len(concerns[("concern__", 1)]) == 0:
-            return 0.0
+            return None
 
         concern = concerns[("concern__", 1)][0]
 
@@ -374,7 +385,7 @@ class EmpathicEngine(EmotionalEngine):
                             or subject.functor == "self"
                         ):
                             return "self"
-                    return annotation.args
+                    return annotation.args[0].functor
             return "self"
         return None
 
@@ -382,11 +393,13 @@ class EmpathicEngine(EmotionalEngine):
         if event is not None:
             for annotation in event[0].annots:
                 if annotation.functor == "interaction_value":
-                    return annotation.args
+                    return annotation.args[0]
         return 0
 
     def is_affective_relevant(self, event) -> bool:
         if event is not None:
+            if event[1] == agentspeak.Trigger.removal:
+                return False
             self.concern_value = self.estimate_concern_value(self.concerns, event)
             if self.concern_value is not None:
                 return True

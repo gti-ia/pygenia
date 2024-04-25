@@ -66,14 +66,17 @@ def _get_empathic_concern_value(agent, term, intention):
         yield
 
 
-@actions.add(".estimate_offer_ug", 2)
+@actions.add(".estimate_offer_ug", 3)
 @agentspeak.optimizer.function_like
 def _estimate_offer(agent, term, intention):
     threshold = float(agentspeak.evaluate(term.args[0], intention.scope))
+    previous_offer = float(agentspeak.evaluate(term.args[2], intention.scope))
     if agentspeak.unify(
         term.args[1],
-        threshold,
+        previous_offer + 0.05,
         intention.scope,
         intention.stack,
     ):
+        # print("---___", agent.emotional_engine.affective_info.get_elicited_emotions())
+
         yield
