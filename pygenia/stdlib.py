@@ -64,3 +64,16 @@ def _get_empathic_concern_value(agent, term, intention):
         intention.stack,
     ):
         yield
+
+
+@actions.add(".estimate_offer_ug", 2)
+@agentspeak.optimizer.function_like
+def _estimate_offer(agent, term, intention):
+    threshold = float(agentspeak.evaluate(term.args[0], intention.scope))
+    if agentspeak.unify(
+        term.args[1],
+        threshold,
+        intention.scope,
+        intention.stack,
+    ):
+        yield

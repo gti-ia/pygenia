@@ -337,6 +337,9 @@ class EmpathicEngine(EmotionalEngine):
     def estimate_concern_value(self, concerns, event):
         concernVal = None
         # This function return the first concern of the agent
+        if len(concerns[("concern__", 1)]) == 0:
+            return 0.0
+
         concern = concerns[("concern__", 1)][0]
 
         if concern != None:

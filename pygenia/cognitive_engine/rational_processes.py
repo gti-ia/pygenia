@@ -47,7 +47,6 @@ class RationalCycle:
             "CtlInt": self.applyCtlInt,
             "ExecInt": self.applyExecInt,
         }
-
         if self.current_step == "SelInt":
             if not options[self.current_step]():
                 return False
@@ -84,7 +83,6 @@ class RationalCycle:
                 flag = options[self.current_step](delayed, calling_intention)
             else:
                 flag = options[self.current_step]()
-
         return True
 
     def applySelEv(self) -> bool:
@@ -200,7 +198,7 @@ class RationalCycle:
                 self.get_intention().scope,
                 self.get_intention().stack,
             ):
-                for _ in plan.context.execute(self, self.get_intention()):
+                for _ in plan.context.execute(self.agent, self.get_intention()):
                     self.set_applicable_plan(plan)
                     self.current_step = "AddIM"
                     return True
@@ -249,6 +247,7 @@ class RationalCycle:
         - If the intention have instructions, the current step will be changed to "ExecInt" to execute the intention
 
         """
+
         while (
             self.circumstance.get_intentions()
             and not self.circumstance.get_intentions()[0]
@@ -295,6 +294,7 @@ class RationalCycle:
         Returns:
             bool: True if the instruction was executed
         """
+
         try:
             if self.intention_selected.instr.f(self.agent, self.intention_selected):
                 # We set the intention.instr to the instr.success

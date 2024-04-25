@@ -253,7 +253,7 @@ class AstAgent(AstNode):
         self.plans = []
         self.concerns = []
         self.personality = None
-        # self.others = None
+        self.others = None
 
     def accept(self, visitor):
         return visitor.visit_agent(self)

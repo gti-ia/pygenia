@@ -75,8 +75,8 @@ class Environment(agentspeak.runtime.Environment):
                 )
             else:
                 agent.emotional_engine.affective_info.get_mood().init_parameters()
+            agent.set_personality_cls(personality_cls)
             if ast_agent.personality is not None:
-                agent.set_personality_cls(personality_cls)
                 agent.personality.set_personality(
                     attributes_dict=ast_agent.personality.traits,
                     parameters=affst_parameters,
@@ -89,6 +89,12 @@ class Environment(agentspeak.runtime.Environment):
                     agent.personality.set_empathic_level(
                         ast_agent.personality.empathic_level
                     )
+            else:
+                agent.personality.set_personality(
+                    attributes_dict={"O": 1, "C": 1, "E": 1, "A": 1, "N": 1},
+                )
+                agent.personality.set_rationality_level(0.5)
+                agent.personality.set_empathic_level(0.5)
 
         # Add rules to agent prototype.
         for ast_rule in ast_agent.rules:
@@ -308,6 +314,8 @@ class Environment(agentspeak.runtime.Environment):
         while maybe_more_work:
             maybe_more_work = False
             for agent in self.agents.values():
+                if len(agent.circumstance.get_intentions()) > 0:
+                    maybe_more_work = True
                 if agent.run():
                     maybe_more_work = True
             if not maybe_more_work:

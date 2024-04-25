@@ -381,6 +381,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                             self.rational_cycle.applySemanticRuleDeliberate()
 
                     self.rational_cycle.set_current_step("SelInt")
+
                     if not self.rational_cycle.step():
                         end_event.set()
 

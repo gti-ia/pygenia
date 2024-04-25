@@ -1,3 +1,0 @@
-+offer(X)
-<-
-.print(X).
