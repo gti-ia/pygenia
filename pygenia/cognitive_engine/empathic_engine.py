@@ -149,6 +149,7 @@ class EmpathicEngine(EmotionalEngine):
             )
             regulated_emotions.append(regulated_emotion)
         self.affective_info.set_elicited_emotions(regulated_emotions)
+        self.empathic_emotions = regulated_emotions
         self.current_step_ast = "EmSel"
         return True
 
@@ -393,8 +394,8 @@ class EmpathicEngine(EmotionalEngine):
         if event is not None:
             for annotation in event[0].annots:
                 if annotation.functor == "interaction_value":
-                    return annotation.args[0]
-        return 0
+                    return float(annotation.args[0])
+        return 0.0
 
     def is_affective_relevant(self, event) -> bool:
         if event is not None:
@@ -410,3 +411,6 @@ class EmpathicEngine(EmotionalEngine):
 
     def get_empathic_concern_value(self):
         return self.empathic_concern_value
+
+    def get_empathic_emotions(self):
+        return self.empathic_emotions

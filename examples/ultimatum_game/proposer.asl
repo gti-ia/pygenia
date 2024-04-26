@@ -1,5 +1,5 @@
 concern__(X) :- offer(M)[subject(S1),target(T1)] & (
-                        ((T=responder & X=(M)) | X=(1-M)) |
+                        (T=responder & X=(M)) |
                         (response(R)[subject(S2),target(T2)] & T2=proposer & 
                         (R=accept & X=(1-M) | R=reject & X=(-(1-M))))
                 ).
@@ -16,33 +16,47 @@ max_round(10).
 
 !start.
 
-+!start: round(R) & max_round(M)
-<-
++!start: round(R) & 
+         max_round(M) & 
+         response(Q)
+<-   
+    
     if(R < M){
-        //.print(R);
         -round(R);
         Y=R+1;
         +round(Y);
+        -response(Q);
+        //.print("round",Y);
+        !propose;
+    }.
+
+
++!start: round(R) & max_round(M)
+<-
+    if(R < M){
+        -round(R);
+        Y=R+1;
+        +round(Y);
+        //.print("round",Y);
         !propose;
     }.
 
 +!propose: max_threshold(T) & offer(O)
 <-
-    .estimate_offer_ug(T,M,O);
+    -offer(O);
+    .estimate_offer_ug(T,O,M);
     .send(responder,tell, offer(M)[subject(proposer),target(responder)]);
-    -offer(O)[subject(proposer),target(responder)];
     +offer(M)[subject(proposer),target(responder)].
 
 +!propose: max_threshold(T)
 <-
-    .estimate_offer_ug(T,M,0.2);
+    .estimate_offer_ug(T,0,M);
     .send(responder,tell, offer(M)[subject(proposer),target(responder)]);
     +offer(M)[subject(proposer),target(responder)].
+    
 
 +response(R)
 <-
-    //.print(R);
-    -response(R);
     !start.
 
 
