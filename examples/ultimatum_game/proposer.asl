@@ -1,8 +1,7 @@
-concern__(X) :- offer(M)[subject(S1),target(T1)] & (
-                        (T=responder & X=(M)) |
-                        (response(R)[subject(S2),target(T2)] & T2=proposer & 
-                        (R=accept & X=(1-M) | R=reject & X=(-(1-M))))
-                ).
+concern__(X) :- (response(R)[subject(S2),target(T2)] & T2=proposer & 
+                (R=accept & X=1 | R=reject & X=0)) |
+                (offer(M)[subject(S1),target(T1)] & 
+                T=responder & X=M+0.3).
 
 personality__: {[O:0.0,C:0.0,E:0.5,A:0.0,N:0.5], 0.0,1.0}.
 
@@ -12,7 +11,7 @@ max_threshold(0.5).
 
 round(0).
 
-max_round(10).
+max_round(20).
 
 !start.
 
@@ -46,7 +45,8 @@ max_round(10).
     -offer(O);
     .estimate_offer_ug(T,O,M);
     .send(responder,tell, offer(M)[subject(proposer),target(responder)]);
-    +offer(M)[subject(proposer),target(responder)].
+    +offer(M)[subject(proposer),target(responder)];
+    .print(M).
 
 +!propose: max_threshold(T)
 <-

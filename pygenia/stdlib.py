@@ -71,18 +71,24 @@ def _get_empathic_concern_value(agent, term, intention):
 def _estimate_offer(agent, term, intention):
     threshold = float(agentspeak.evaluate(term.args[0], intention.scope))
     previous_offer = float(agentspeak.evaluate(term.args[1], intention.scope))
+    w_link = 0.5
+    w_emph = agent.personality.get_empathic_level()
+    new_offer = 0.1
+    if len(agent.emotional_engine.get_empathic_emotions()) > 0:
+        new_offer = (
+            float(agent.emotional_engine.get_empathic_emotions()[0].get_pleasure()) + 1
+        ) / 2 * w_emph + float(agent.others["responder"]["affective_link"]) * w_link
+        print(
+            "---___",
+            new_offer,
+            agent.emotional_engine.get_empathic_emotions()[0].get_pleasure(),
+            agent.emotional_engine.empathic_concern_value,
+            agent.others["responder"]["affective_link"],
+        )
     if agentspeak.unify(
         term.args[2],
-        previous_offer + 0.05,
+        new_offer,
         intention.scope,
         intention.stack,
     ):
-        print(
-            "---___",
-            previous_offer,
-            agent.emotional_engine.get_empathic_emotions(),
-            agent.emotional_engine.empathic_concern_value,
-            agent.others,
-        )
-
         yield
