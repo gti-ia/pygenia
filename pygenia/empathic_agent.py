@@ -1,5 +1,5 @@
 from __future__ import print_function
-
+import math
 import agentspeak
 import pygenia.affective_agent
 from pygenia.affective_agent import AffectiveAgent
@@ -35,7 +35,11 @@ class EmpathicAgent(pygenia.affective_agent.AffectiveAgent):
     def update_affective_link(self, agent_id, interaction_value):
         if self.others is not None:
             if agent_id in self.others.keys():
-                self.others[agent_id]["affective_link"] += interaction_value
+                x = (
+                    self.others[agent_id]["affective_link"] + interaction_value
+                ) * self.personality.get_empathic_level()
+                self.others[agent_id]["affective_link"] = max(-1, min(1, x))
+                # self.others[agent_id]["affective_link"] += interaction_value
             else:
                 self.others.setdefault(agent_id, {"affective_link": interaction_value})
 

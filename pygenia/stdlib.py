@@ -4,6 +4,7 @@ import agentspeak
 import agentspeak.optimizer
 import agentspeak.runtime
 from agentspeak.stdlib import actions
+from scipy.optimize import linprog
 
 
 @actions.add(".print_afflb")
@@ -76,8 +77,13 @@ def _estimate_offer(agent, term, intention):
     new_offer = 0.1
     if len(agent.emotional_engine.get_empathic_emotions()) > 0:
         new_offer = (
-            float(agent.emotional_engine.get_empathic_emotions()[0].get_pleasure()) + 1
-        ) / 2 * w_emph + float(agent.others["responder"]["affective_link"]) * w_link
+            1
+            / (
+                float(agent.emotional_engine.get_empathic_emotions()[0].get_pleasure())
+                + 1
+            )
+            / 2
+        ) * w_emph + float(agent.others["responder"]["affective_link"]) * w_link
         print(
             "---___",
             new_offer,
