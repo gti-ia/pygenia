@@ -3,7 +3,7 @@ concern__(X) :- (response(R)[subject(S2),target(T2)] & T2=proposer &
                 (offer(M)[subject(S1),target(T1)] & 
                 T=responder & X=M+0.3).
 
-personality__: {[O:0.0,C:0.0,E:0.5,A:0.0,N:0.5], 0.0,1.0}.
+personality__: {[O:0.0,C:0.0,E:0.5,A:0.0,N:0.5], 0.0,0.5}.
 
 others__: { responder: [ affective_link: 0.5 ] }.
 

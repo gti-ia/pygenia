@@ -5,6 +5,7 @@ import agentspeak.optimizer
 import agentspeak.runtime
 from agentspeak.stdlib import actions
 from scipy.optimize import linprog
+import math
 
 
 @actions.add(".print_afflb")
@@ -76,20 +77,35 @@ def _estimate_offer(agent, term, intention):
     w_emph = agent.personality.get_empathic_level()
     new_offer = 0.1
     if len(agent.emotional_engine.get_empathic_emotions()) > 0:
-        new_offer = (
+        # new_offer = (
+        #    1
+        #    / (
+        #        float(agent.emotional_engine.get_empathic_emotions()[0].get_pleasure())
+        #        + 1
+        #    )
+        #    / 2
+        # ) * w_emph + float(agent.others["responder"]["affective_link"]) * w_link
+        others_emotion = agent.emotional_engine.get_empathic_emotions()[
+            0
+        ].get_pleasure()
+        affective_link = agent.others["responder"]["affective_link"]
+        mood = agent.emotional_engine.affective_info.get_mood().mood.get_pleasure()
+        empathic_level = agent.personality.get_empathic_level()
+        new_offer = float(
             1
             / (
-                float(agent.emotional_engine.get_empathic_emotions()[0].get_pleasure())
-                + 1
+                5
+                - (affective_link + (1 + mood)) * empathic_level
+                + math.exp(5 * (others_emotion + -affective_link))
             )
-            / 2
-        ) * w_emph + float(agent.others["responder"]["affective_link"]) * w_link
+        )
         print(
             "---___",
             new_offer,
-            agent.emotional_engine.get_empathic_emotions()[0].get_pleasure(),
-            agent.emotional_engine.empathic_concern_value,
-            agent.others["responder"]["affective_link"],
+            others_emotion,
+            agent.emotional_engine.affective_info.get_mood().mood,
+            affective_link,
+            empathic_level,
         )
     if agentspeak.unify(
         term.args[2],

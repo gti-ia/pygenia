@@ -85,10 +85,8 @@ class PAModel(AffectiveState):
         This method is used to update the affective state
 
         """
-
         if len(emotions) > 0:
             emotion = emotions[0]
-
             self.mood.pleasure, self.mood.arousal = self.vector_sum(self.mood, emotion)
             self.affective_labels = self.fuzzify_emotion(self.mood)
 
@@ -161,8 +159,8 @@ class PAModel(AffectiveState):
     def vector_sum(
         self, vector1: Point, vector2: Point, weight1: float = 1.0, weight2: float = 1.0
     ):
-        sum_x = max(0, min(1, vector1.pleasure * weight1 + vector2.pleasure * weight2))
-        sum_y = max(0, min(1, vector1.arousal * weight1 + vector2.arousal * weight2))
+        sum_x = max(-1, min(1, vector1.pleasure * weight1 + vector2.pleasure * weight2))
+        sum_y = max(-1, min(1, vector1.arousal * weight1 + vector2.arousal * weight2))
 
         return sum_x, sum_y
 

@@ -24,6 +24,7 @@ class EmpathicEngine(EmotionalEngine):
         self.Mem = []
         self.empathic_emotions = []
         self.selected_emotions = []
+        self.debug_count = 0
 
     def affective_transition_system(self):
         """
@@ -52,6 +53,7 @@ class EmpathicEngine(EmotionalEngine):
         return True
 
     def event_classification(self) -> bool:
+        print("------>>>>>>>", self.debug_count)
         self.event = None
         # self.concern_value = 0.0
         if True:  # while self.lock instead of True for the real implementation
@@ -74,6 +76,7 @@ class EmpathicEngine(EmotionalEngine):
                                 self.subject, self.interaction_value
                             )
                         self.current_step_ast = "Appr"
+                        # self.debug_count += 1
                     return True
                 else:
                     if self.target == "self" and self.subject not in ["self", None]:

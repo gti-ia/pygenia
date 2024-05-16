@@ -4,13 +4,13 @@ from itertools import product
 def calcular_emocion_propia(dinero, emocion_propia):
     # Aquí defines cómo calcular la emoción propia en función del dinero asignado
     # Por ejemplo, podrías utilizar alguna función que dependa de la cantidad de dinero asignado
-    return emocion_propia * dinero[0] / 10
+    return 1 / emocion_propia * dinero[0] / 10
 
 
 def calcular_emocion_rival(dinero, emocion_rival):
     # Aquí defines cómo calcular la emoción del rival en función del dinero asignado
     # Por ejemplo, podrías utilizar alguna función que dependa de la cantidad de dinero asignado
-    return emocion_rival * dinero[1] / 10
+    return 1 / emocion_rival * dinero[1] / 10
 
 
 def encontrar_solucion_optima(emocion_propia, emocion_rival, cantidad_total_dinero):
@@ -40,8 +40,8 @@ def encontrar_solucion_optima(emocion_propia, emocion_rival, cantidad_total_dine
 
 # Condiciones iniciales
 cantidad_total_dinero = 10  # La suma total de dinero a repartir
-emocion_propia = -0.7  # Emoción propia del jugador
-emocion_rival = 0.6  # Emoción del rival
+emocion_propia = 0.7  # Emoción propia del jugador
+emocion_rival = 1.6  # Emoción del rival
 
 # Encontrar la solución óptima
 dinero_optimo = encontrar_solucion_optima(
