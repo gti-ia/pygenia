@@ -24,7 +24,6 @@ class EmpathicEngine(EmotionalEngine):
         self.Mem = []
         self.empathic_emotions = []
         self.selected_emotions = []
-        self.debug_count = 0
 
     def affective_transition_system(self):
         """
@@ -53,7 +52,6 @@ class EmpathicEngine(EmotionalEngine):
         return True
 
     def event_classification(self) -> bool:
-        print("------>>>>>>>", self.debug_count)
         self.event = None
         # self.concern_value = 0.0
         if True:  # while self.lock instead of True for the real implementation
@@ -76,7 +74,6 @@ class EmpathicEngine(EmotionalEngine):
                                 self.subject, self.interaction_value
                             )
                         self.current_step_ast = "Appr"
-                        # self.debug_count += 1
                     return True
                 else:
                     if self.target == "self" and self.subject not in ["self", None]:
@@ -142,12 +139,12 @@ class EmpathicEngine(EmotionalEngine):
             )
             regulated_emotion.set_pleasure(
                 regulated_emotion.get_pleasure()
-                * affective_link
+                * max(0, affective_link)
                 * self.agent.personality.get_empathic_level()
             )
             regulated_emotion.set_arousal(
                 regulated_emotion.get_arousal()
-                * affective_link
+                * max(0, affective_link)
                 * self.agent.personality.get_empathic_level()
             )
             regulated_emotions.append(regulated_emotion)
@@ -358,19 +355,19 @@ class EmpathicEngine(EmotionalEngine):
         concern = concerns[("concern__", 1)][0]
 
         if concern != None:
-            if event[1].name == "addition":
-                # adding the new literal if the event is an addition of a belief
-                concernVal = self.applyConcernForAddition(event, concern)
-            else:
-                concernVal = self.applyConcernForDeletion(event, concern)
+            if event[0].functor in concern.predicates:
+                if event[1].name == "addition":
+                    # adding the new literal if the event is an addition of a belief
+                    concernVal = self.applyConcernForAddition(event, concern)
+                else:
+                    concernVal = self.applyConcernForDeletion(event, concern)
 
-            if concernVal != None:
-                concernVal = float(concernVal)
-                if concernVal < 0:
-                    concernVal = 0.0
-                elif concernVal > 1:
-                    concernVal = 1.0
-
+                if concernVal != None:
+                    concernVal = float(concernVal)
+                    if concernVal < 0:
+                        concernVal = 0.0
+                    elif concernVal > 1:
+                        concernVal = 1.0
         return concernVal
 
     def get_subject(self, event):

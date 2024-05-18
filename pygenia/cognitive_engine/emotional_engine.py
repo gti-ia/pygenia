@@ -37,9 +37,6 @@ class EmotionalEngine:
     def isAffectRelevantEvent(self, event):
         pass
 
-    def test_concern(self, term, intention, concern):
-        pass
-
     def update_affective_state(self):
         pass
 
@@ -103,6 +100,9 @@ class EmotionalEngine:
         Returns:
             OR[bool, str]: If the concern is not found, return False. If the concern is found, return the value of the concern
         """
+        # print("--->>>>>", concern.query)
+        # for x in concern.query:
+        #    print("--->>>>>", x)
         term = agentspeak.evaluate(term, intention.scope)
 
         if not isinstance(term, agentspeak.Literal):
@@ -154,6 +154,7 @@ class Concern:
     def __init__(self, head, query):
         self.head = head
         self.query = query
+        self.predicates = None
 
     def __str__(self):
         return "%s :- %s" % (self.head, self.query)

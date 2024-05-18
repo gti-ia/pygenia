@@ -22,6 +22,7 @@ from __future__ import print_function
 import errno
 import os.path
 import sys
+import re
 
 import agentspeak
 import agentspeak.util
@@ -320,7 +321,6 @@ def parse_tkconcern(tok, tokens, log):
                     loc=tok.loc,
                     extra_locs=[literal.loc],
                 )
-
     return tok, literal
 
 
@@ -453,9 +453,21 @@ def parse_concern(tok, tokens, log):
         concern = AstConcern()
         concern.head = belief_atom
         concern.loc = tok.loc
-
         tok = next(tokens)
         tok, concern.consequence = parse_term(tok, tokens, log)
+        expression = str(concern.consequence)
+        pattern = r"\b\w+"
+        matches = re.findall(pattern, expression)
+        pattern_numbers = r"[0-9]\w*"
+        pattern_letters = r"[A-Z]\w*"
+        cleaned_expression = [
+            match
+            for match in matches
+            if not (
+                re.search(pattern_numbers, match) or (re.search(pattern_letters, match))
+            )
+        ]
+        concern.predicates = cleaned_expression
         return tok, concern
     else:
         # Just the belief atom.
@@ -721,6 +733,7 @@ class AstConcern(AstNode):
         super(AstConcern, self).__init__()
         self.head = None
         self.consequence = None
+        self.predicates = None
 
     def accept(self, visitor):
         return visitor.visit_concern(self)

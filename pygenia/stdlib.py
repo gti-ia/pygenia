@@ -68,15 +68,30 @@ def _get_empathic_concern_value(agent, term, intention):
         yield
 
 
-@actions.add(".estimate_offer_ug", 3)
+num_round = 0
+
+
+@actions.add(".estimate_offer_ug", 4)
 @agentspeak.optimizer.function_like
 def _estimate_offer(agent, term, intention):
     threshold = float(agentspeak.evaluate(term.args[0], intention.scope))
     previous_offer = float(agentspeak.evaluate(term.args[1], intention.scope))
+    response = str(agentspeak.evaluate(term.args[3], intention.scope))
     w_link = 0.5
     w_emph = agent.personality.get_empathic_level()
     new_offer = 0.1
-    if len(agent.emotional_engine.get_empathic_emotions()) > 0:
+    try:
+        others_emotion = agent.emotional_engine.get_empathic_emotions()[
+            0
+        ].get_pleasure()
+    except:
+        others_emotion = 0.0
+    affective_link = agent.others["responder"]["affective_link"]
+    mood = agent.emotional_engine.affective_info.get_mood().mood.get_pleasure()
+    empathic_level = agent.personality.get_empathic_level()
+    global num_round
+    if response == "reject":
+
         # new_offer = (
         #    1
         #    / (
@@ -85,28 +100,31 @@ def _estimate_offer(agent, term, intention):
         #    )
         #    / 2
         # ) * w_emph + float(agent.others["responder"]["affective_link"]) * w_link
-        others_emotion = agent.emotional_engine.get_empathic_emotions()[
-            0
-        ].get_pleasure()
-        affective_link = agent.others["responder"]["affective_link"]
-        mood = agent.emotional_engine.affective_info.get_mood().mood.get_pleasure()
-        empathic_level = agent.personality.get_empathic_level()
-        new_offer = float(
-            1
-            / (
-                5
-                - (affective_link + (1 + mood)) * empathic_level
-                + math.exp(5 * (others_emotion + -affective_link))
+        new_offer = previous_offer + 0.05
+    else:
+        new_offer = round(
+            float(
+                1
+                / (
+                    5
+                    - (affective_link + (1 + mood)) * empathic_level
+                    + math.exp(5 * (others_emotion + -affective_link))
+                )
             )
+            * 10,
+            2,
         )
+
         print(
             "---___",
             new_offer,
             others_emotion,
-            agent.emotional_engine.affective_info.get_mood().mood,
+            agent.emotional_engine.affective_info.get_mood().mood.get_pleasure(),
             affective_link,
             empathic_level,
+            num_round,
         )
+    num_round += 1
     if agentspeak.unify(
         term.args[2],
         new_offer,

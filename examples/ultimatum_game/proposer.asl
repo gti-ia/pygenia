@@ -11,7 +11,7 @@ max_threshold(0.5).
 
 round(0).
 
-max_round(20).
+max_round(100).
 
 !start.
 
@@ -36,27 +36,35 @@ max_round(20).
         -round(R);
         Y=R+1;
         +round(Y);
-        //.print("round",Y);
         !propose;
     }.
 
-+!propose: max_threshold(T) & offer(O)
++!propose: max_threshold(T) & offer(O) & previuos_response(reject)
 <-
     -offer(O);
-    .estimate_offer_ug(T,O,M);
+    .estimate_offer_ug(T,O,M,"reject");
+    .send(responder,tell, offer(M)[subject(proposer),target(responder)]);
+    +offer(M)[subject(proposer),target(responder)];
+    .print(M).
+
++!propose: max_threshold(T) & offer(O)  & previuos_response(accept)
+<-
+    -offer(O);
+    .estimate_offer_ug(T,O,M,"accept");
     .send(responder,tell, offer(M)[subject(proposer),target(responder)]);
     +offer(M)[subject(proposer),target(responder)];
     .print(M).
 
 +!propose: max_threshold(T)
 <-
-    .estimate_offer_ug(T,0,M);
+    .estimate_offer_ug(T,0,M,"None");
     .send(responder,tell, offer(M)[subject(proposer),target(responder)]);
     +offer(M)[subject(proposer),target(responder)].
     
 
 +response(R)
 <-
+    -+previuos_response(R);
     !start.
 
 

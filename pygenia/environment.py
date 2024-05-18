@@ -188,10 +188,11 @@ class Environment(agentspeak.runtime.Environment):
             consequence = concern.consequence.accept(
                 BuildQueryVisitor(variables, actions, log)
             )
-            concern = Concern(head, consequence)
-            agent.add_concern(concern)
+            new_concern = Concern(head, consequence)
+            new_concern.predicates = concern.predicates
+            agent.add_concern(new_concern)
             concern_value = agent.emotional_engine.test_concern(
-                head, agentspeak.runtime.Intention(), concern
+                head, agentspeak.runtime.Intention(), new_concern
             )
 
         # Report errors.

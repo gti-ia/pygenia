@@ -87,7 +87,11 @@ class PAModel(AffectiveState):
         """
         if len(emotions) > 0:
             emotion = emotions[0]
-            self.mood.pleasure, self.mood.arousal = self.vector_sum(self.mood, emotion)
+            w_mood = 1
+            w_emotion = 0.5
+            self.mood.pleasure, self.mood.arousal = self.vector_sum(
+                self.mood, emotion, w_mood, w_emotion
+            )
             self.affective_labels = self.fuzzify_emotion(self.mood)
 
     def deriveASFromAppraisalVariables(self, affective_info):
@@ -159,8 +163,18 @@ class PAModel(AffectiveState):
     def vector_sum(
         self, vector1: Point, vector2: Point, weight1: float = 1.0, weight2: float = 1.0
     ):
-        sum_x = max(-1, min(1, vector1.pleasure * weight1 + vector2.pleasure * weight2))
-        sum_y = max(-1, min(1, vector1.arousal * weight1 + vector2.arousal * weight2))
+        sum_x = vector1.pleasure * weight1 + vector2.pleasure * weight2
+        sum_y = vector1.arousal * weight1 + vector2.arousal * weight2
+
+        max_magnitude = max(abs(sum_x), abs(sum_y))
+
+        if max_magnitude > 1:
+            scale_factor = 1 / max_magnitude
+            sum_x *= scale_factor
+            sum_y *= scale_factor
+
+        sum_x = max(-1, min(1, sum_x))
+        sum_y = max(-1, min(1, sum_y))
 
         return sum_x, sum_y
 
