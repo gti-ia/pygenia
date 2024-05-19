@@ -1,8 +1,8 @@
 concern__(X) :- offer(M) & X=M.
 
-min_threshold(0.2).
+min_threshold(2.0).
 
-desired(0.5).
+desired(5.0).
 
 +offer(X): min_threshold(T)
 <-

@@ -183,7 +183,7 @@ class AffectiveAgent(agentspeak.runtime.Agent):
                 raise AslError("expected literal term")
 
             # Remove a intention passed by the parameters.
-            for intention_stack in self.circunstance.get_intentions():
+            for intention_stack in self.circumstance.get_intentions():
                 if not intention_stack:
                     continue
 

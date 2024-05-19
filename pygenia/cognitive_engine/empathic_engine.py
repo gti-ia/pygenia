@@ -61,7 +61,9 @@ class EmpathicEngine(EmotionalEngine):
                 self.subject = self.get_subject(self.event)
                 self.target = self.get_target(self.event)
                 self.interaction_value = self.get_interaction_value(self.event)
+
                 if self.is_affective_relevant(self.event):
+
                     self.Mem.append(self.event)
                     if self.target not in ["self", None]:
                         self.agent.update_affective_link(
@@ -402,6 +404,7 @@ class EmpathicEngine(EmotionalEngine):
             if event[1] == agentspeak.Trigger.removal:
                 return False
             self.concern_value = self.estimate_concern_value(self.concerns, event)
+
             if self.concern_value is not None:
                 return True
             for annotation in event[0].annots:

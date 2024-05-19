@@ -23,7 +23,7 @@ affst_cls = pygenia.emotion_models.pa.PAModel
 responder_em_engine_cls = pygenia.cognitive_engine.default_engine.DefaultEngine
 proposer_em_engine_cls = pygenia.cognitive_engine.empathic_engine.EmpathicEngine
 
-with open(os.path.join(os.path.dirname(__file__), "proposer.asl")) as source:
+with open(os.path.join(os.path.dirname(__file__), "agent_a.asl")) as source:
     agents = env.build_agents(
         source,
         1,
@@ -39,7 +39,23 @@ with open(os.path.join(os.path.dirname(__file__), "proposer.asl")) as source:
         affst_parameters=["english"],
     )
 
-with open(os.path.join(os.path.dirname(__file__), "responder.asl")) as source:
+with open(os.path.join(os.path.dirname(__file__), "agent_b.asl")) as source:
+    agents = env.build_agents(
+        source,
+        1,
+        agentspeak.stdlib.actions,
+        # agent_cls=responder_agent_cls,
+        # em_engine_cls=responder_em_engine_cls,
+        # personality_cls=personality_cls,
+        # affst_cls=affst_cls,
+        agent_cls=proposer_agent_cls,
+        em_engine_cls=proposer_em_engine_cls,
+        personality_cls=personality_cls,
+        affst_cls=affst_cls,
+        affst_parameters=["english"],
+    )
+
+with open(os.path.join(os.path.dirname(__file__), "officer.asl")) as source:
     agents = env.build_agents(
         source,
         1,
