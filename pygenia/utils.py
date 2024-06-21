@@ -7,6 +7,8 @@ import agentspeak
 import agentspeak.runtime
 import agentspeak.stdlib
 import agentspeak.util
+import pygenia
+import pygenia.affective_agent
 
 LOGGER = agentspeak.get_logger(__name__)
 C = {}
@@ -77,12 +79,13 @@ class TrueQuery(agentspeak.runtime.TrueQuery):
 class ActionQuery(agentspeak.runtime.ActionQuery):
 
     def execute(self, agent, intention):
-        agent.circumstance.add_action((self.term, self.impl))
-        """agent.C["A"] = (
-            [(self.term, self.impl)]
-            if "A" not in agent.C
-            else agent.C["A"] + [(self.term, self.impl)]
-        )"""
+        if isinstance(agent, pygenia.affective_agent.AffectiveAgent):
+            agent.circumstance.add_action((self.term, self.impl))
+            """agent.C["A"] = (
+                [(self.term, self.impl)]
+                if "A" not in agent.C
+                else agent.C["A"] + [(self.term, self.impl)]
+            )"""
 
         for _ in self.impl(agent, self.term, intention):
             yield

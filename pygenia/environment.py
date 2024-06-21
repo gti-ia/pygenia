@@ -7,7 +7,7 @@ import agentspeak
 import agentspeak.runtime
 import agentspeak.stdlib
 import agentspeak.util
-from agentspeak.runtime import Agent, BuildTermVisitor, Intention
+from agentspeak.runtime import Agent, BuildTermVisitor, Intention, Rule, noop, Plan
 
 
 import pygenia.lexer
@@ -59,6 +59,84 @@ class Environment(agentspeak.runtime.Environment):
             Tuple[ast_agent, Agent]: The ast of the agent and the agent
 
         """
+        if agent_cls == agentspeak.runtime.Agent:
+            log = agentspeak.Log(LOGGER, 3)
+            agent = agent_cls(self, self._make_name(name or source.name))
+
+            # Add rules to agent prototype.
+            for ast_rule in ast_agent.rules:
+                variables = {}
+                head = ast_rule.head.accept(BuildTermVisitor(variables))
+                consequence = ast_rule.consequence.accept(
+                    BuildQueryVisitor(variables, actions, log)
+                )
+                agent.add_rule(Rule(head, consequence))
+
+            # Add plans to agent prototype.
+            for ast_plan in ast_agent.plans:
+                variables = {}
+
+                head = ast_plan.event.head.accept(BuildTermVisitor(variables))
+
+                if ast_plan.context:
+                    context = ast_plan.context.accept(
+                        BuildQueryVisitor(variables, actions, log)
+                    )
+                else:
+                    context = TrueQuery()
+
+                body = Instruction(noop)
+                body.f = noop
+                if ast_plan.body:
+                    ast_plan.body.accept(
+                        BuildInstructionsVisitor(variables, actions, body, log)
+                    )
+
+                str_body = str(ast_plan.body)
+
+                plan = Plan(
+                    ast_plan.event.trigger,
+                    ast_plan.event.goal_type,
+                    head,
+                    context,
+                    body,
+                    ast_plan.body,
+                    ast_plan.annotation,
+                )
+
+                plan.args = [str(i) for i in ast_plan.event.head.terms] + [
+                    str(j) for i in ast_plan.event.head.annotations for j in i.terms
+                ]
+
+                agent.add_plan(plan)
+
+            # Add beliefs to agent prototype.
+            for ast_belief in ast_agent.beliefs:
+                belief = ast_belief.accept(BuildTermVisitor({}))
+                agent.call(
+                    agentspeak.Trigger.addition,
+                    agentspeak.GoalType.belief,
+                    belief,
+                    Intention(),
+                    delayed=True,
+                )
+
+            # Call initial goals on agent prototype.
+            for ast_goal in ast_agent.goals:
+                term = ast_goal.atom.accept(BuildTermVisitor({}))
+                agent.call(
+                    agentspeak.Trigger.addition,
+                    agentspeak.GoalType.achievement,
+                    term,
+                    Intention(),
+                    delayed=True,
+                )
+
+            # Report errors.
+            log.throw()
+
+            self.agents[agent.name] = agent
+            return ast_agent, agent
 
         # agent_cls = AffectiveAgent
 
@@ -173,13 +251,14 @@ class Environment(agentspeak.runtime.Environment):
             f_event = agentspeak.runtime.Event(
                 agentspeak.Trigger.addition, agentspeak.GoalType.achievement, term
             )
-            if agent_cls == agentspeak.runtime.Agent:
-                agent.C["E"] = (
-                    [f_event] if "E" not in agent.C else agent.C["E"] + [f_event]
-                )
-            else:
-                agent.circumstance.add_event(f_event)
-                # [f_event] if "E" not in agent.C else agent.C["E"] + [f_event]
+            # if agent_cls == agentspeak.runtime.Agent:
+            #    agent.C["E"] = (
+            #        [f_event] if "E" not in agent.C else agent.C["E"] + [f_event]
+            #    )
+            # else:
+            #    agent.circumstance.add_event(f_event)
+            agent.circumstance.add_event(f_event)
+            # [f_event] if "E" not in agent.C else agent.C["E"] + [f_event]
 
         # Add rules to agent prototype.
         for concern in ast_agent.concerns:
@@ -315,7 +394,10 @@ class Environment(agentspeak.runtime.Environment):
         while maybe_more_work:
             maybe_more_work = False
             for agent in self.agents.values():
-                if len(agent.circumstance.get_intentions()) > 0:
+                if (
+                    isinstance(agent, pygenia.affective_agent.AffectiveAgent)
+                    and len(agent.circumstance.get_intentions()) > 0
+                ):
                     maybe_more_work = True
                 if agent.run():
                     maybe_more_work = True
