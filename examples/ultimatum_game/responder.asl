@@ -8,8 +8,8 @@ desired(5.0).
 <-
 if (X > T){
     .send(proposer,tell, response(accept)[subject(responder),target(proposer),interaction_value(0.05)]);
-    .print("propose accepted");
+    //.print("propose accepted");
 }else{
     .send(proposer,tell, response(reject)[subject(responder),target(proposer),interaction_value(-0.05)]);
-    .print("propose rejected");
+    //.print("propose rejected");
 }.

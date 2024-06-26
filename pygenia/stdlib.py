@@ -99,12 +99,13 @@ def _get_empathic_pleasure(agent, term, intention):
         yield
 
 
-@actions.add(".estimate_offer_ug", 4)
+@actions.add(".estimate_offer_ug", 5)
 @agentspeak.optimizer.function_like
 def _estimate_offer(agent, term, intention):
     threshold = float(agentspeak.evaluate(term.args[0], intention.scope))
     previous_offer = float(agentspeak.evaluate(term.args[1], intention.scope))
     response = str(agentspeak.evaluate(term.args[3], intention.scope))
+    min_offer = float(agentspeak.evaluate(term.args[4], intention.scope))
     w_link = 0.5
     w_emph = agent.personality.get_empathic_level()
     new_offer = 0.1
@@ -126,20 +127,27 @@ def _estimate_offer(agent, term, intention):
         #    )
         #    / 2
         # ) * w_emph + float(agent.others["responder"]["affective_link"]) * w_link
-        new_offer = previous_offer + 0.05
+        if min_offer > 0:
+            new_offer = min_offer
+        else:
+            new_offer = previous_offer + 0.05
     else:
-        new_offer = round(
-            float(
-                1
-                / (
-                    5
-                    - (affective_link + (1 + mood)) * empathic_level
-                    + math.exp(5 * (others_emotion + -affective_link))
+        new_offer = max(
+            min_offer,
+            round(
+                float(
+                    1
+                    / (
+                        5
+                        - (affective_link + (1 + mood)) * empathic_level
+                        + math.exp(5 * (others_emotion + -affective_link))
+                    )
                 )
-            )
-            * 10,
-            2,
+                * 10,
+                2,
+            ),
         )
+        # print(others_emotion, mood, new_offer)
     if agentspeak.unify(
         term.args[2],
         new_offer,
