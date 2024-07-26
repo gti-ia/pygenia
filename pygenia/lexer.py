@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
-# This file is part of the pygenia interpreter that extens the 
-# python-agentspeak interpreter (Copyright (C) 2016-2019 Niklas 
+# This file is part of the pygenia interpreter that extends the
+# python-agentspeak interpreter (Copyright (C) 2016-2019 Niklas
 # Fiekas <niklas.fiekas@tu-clausthal.de>.)
 #
 # This program is free software: you can redistribute it and/or modify
@@ -28,12 +28,15 @@ import agentspeak
 import agentspeak.util
 
 from agentspeak import (SourceLocation, Trigger, GoalType, FormulaType,
-                   UnaryOp, BinaryOp)
+                        UnaryOp, BinaryOp)
+
+from agentspeak.lexer import tokenize, TokenStream, main, repl
 
 
 class Token(object):
     def __init__(self, regex,
                  space=False, comment=False,
+                 concern=False, personality=False, others=False,
                  functor=False, numeric=False, variable=False, string=False,
                  boolean=None,
                  trigger=None, goal_type=None, formula_type=None,
@@ -42,6 +45,10 @@ class Token(object):
 
         self.space = space
         self.comment = comment
+
+        self.concern = concern
+        self.personality = personality
+        self.others = others
 
         self.functor = functor
         self.numeric = numeric
@@ -59,18 +66,17 @@ class Token(object):
         self.add_op = add_op
         self.comp_op = comp_op
 
-
+agentspeak.lexer.Token = Token
 TokenInfo = collections.namedtuple("TokenInfo", "lexeme token loc")
 
 
 class TokenType(enum.Enum):
     __order__ = """
-                personality
-                others
                 space comment
                 paren_open paren_close
                 bracket_open bracket_close
                 brace_open brace_close concern
+                personality others
                 functor numeric variable string
                 lit_true lit_false
                 tok_if tok_else tok_while tok_for
@@ -83,164 +89,89 @@ class TokenType(enum.Enum):
                 fullstop comma semicolon at
                 """
 
-    personality   = Token(r"personality__")
-
-    others        = Token(r"others__")
     
-    space         = Token(r"\s+", space=True)
-    comment       = Token(r"(//|#).*", comment=True)
 
-    paren_open    = Token(r"\(")
-    paren_close   = Token(r"\)")
+    space = Token(r"\s+", space=True)
+    comment = Token(r"(//|#).*", comment=True)
 
-    bracket_open  = Token(r"\[")
+    paren_open = Token(r"\(")
+    paren_close = Token(r"\)")
+
+    bracket_open = Token(r"\[")
     bracket_close = Token(r"\]")
 
-    brace_open    = Token(r"{")
-    brace_close   = Token(r"}")
-    concern       = Token(r"concern__")
+    brace_open = Token(r"{")
+    brace_close = Token(r"}")
 
-    functor       = Token(r"(~?(?!(true|false|not|div|mod|if|else|while|for|include|begin|end)($|[^a-zA-Z0-9_]))((\.?[a-z][a-zA-Z0-9_]*)+))", functor=True)
-    numeric       = Token(r"((\d*\.\d+|\d+)([eE][+-]?\d+)?)", numeric=True)
-    variable      = Token(r"(_*[A-Z][a-zA-Z0-9_]*|_+)", variable=True)
-    string        = Token(r"\"([^\\\"]|\\.)*\"", string=True)
+    concern = Token(r"concern__", concern=True)
 
-    lit_true      = Token(r"true", boolean=True)
-    lit_false     = Token(r"false", boolean=False)
+    personality = Token(r"personality__", personality=True)
 
-    tok_if        = Token(r"if")
-    tok_else      = Token(r"else")
-    tok_while     = Token(r"while")
-    tok_for       = Token(r"for")
+    others = Token(r"others__", others=True)
 
-    include       = Token(r"include")
-    begin         = Token(r"begin")
-    end           = Token(r"end")
+    functor = Token(
+        r"(~?(?!(true|false|not|div|mod|if|else|while|for|include|begin|end)($|[^a-zA-Z0-9_]))((\.?[a-z][a-zA-Z0-9_]*)+))", functor=True)
+    numeric = Token(r"((\d*\.\d+|\d+)([eE][+-]?\d+)?)", numeric=True)
+    variable = Token(r"(_*[A-Z][a-zA-Z0-9_]*|_+)", variable=True)
+    string = Token(r"\"([^\\\"]|\\.)*\"", string=True)
 
-    arrow         = Token(r"<-")
-    define        = Token(r":-")
-    colon         = Token(r":")
+    lit_true = Token(r"true", boolean=True)
+    lit_false = Token(r"false", boolean=False)
+
+    tok_if = Token(r"if")
+    tok_else = Token(r"else")
+    tok_while = Token(r"while")
+    tok_for = Token(r"for")
+
+    include = Token(r"include")
+    begin = Token(r"begin")
+    end = Token(r"end")
+
+    arrow = Token(r"<-")
+    define = Token(r":-")
+    colon = Token(r":")
 
     fork_join_and = Token(r"\|&\|")
     fork_join_xor = Token(r"\|\|\|")
 
     double_exclam = Token(r"!!", formula_type=FormulaType.achieve_later)
-    exclam        = Token(r"!", formula_type=FormulaType.achieve, goal_type=GoalType.achievement)
-    question      = Token(r"\?", formula_type=FormulaType.test, goal_type=GoalType.test)
-    minus_plus    = Token(r"-\+", formula_type=FormulaType.replace)
+    exclam = Token(r"!", formula_type=FormulaType.achieve,
+                   goal_type=GoalType.achievement)
+    question = Token(r"\?", formula_type=FormulaType.test,
+                     goal_type=GoalType.test)
+    minus_plus = Token(r"-\+", formula_type=FormulaType.replace)
 
-    op_not        = Token(r"not")
-    op_plus       = Token(r"\+", unary_op=UnaryOp.op_pos, add_op=BinaryOp.op_add, trigger=Trigger.addition, formula_type=FormulaType.add)
-    op_minus      = Token(r"-", unary_op=UnaryOp.op_neg, add_op=BinaryOp.op_sub, trigger=Trigger.removal, formula_type=FormulaType.remove)
-    op_power      = Token(r"\*\*")
-    op_mult       = Token(r"\*", mult_op=BinaryOp.op_mul)
-    op_fdiv       = Token(r"/", mult_op=BinaryOp.op_truediv)
-    op_div        = Token(r"div", mult_op=BinaryOp.op_floordiv)
-    op_mod        = Token(r"mod", mult_op=BinaryOp.op_mod)
-    op_and        = Token(r"&")
-    op_or         = Token(r"\|")
+    op_not = Token(r"not")
+    op_plus = Token(r"\+", unary_op=UnaryOp.op_pos, add_op=BinaryOp.op_add,
+                    trigger=Trigger.addition, formula_type=FormulaType.add)
+    op_minus = Token(r"-", unary_op=UnaryOp.op_neg, add_op=BinaryOp.op_sub,
+                     trigger=Trigger.removal, formula_type=FormulaType.remove)
+    op_power = Token(r"\*\*")
+    op_mult = Token(r"\*", mult_op=BinaryOp.op_mul)
+    op_fdiv = Token(r"/", mult_op=BinaryOp.op_truediv)
+    op_div = Token(r"div", mult_op=BinaryOp.op_floordiv)
+    op_mod = Token(r"mod", mult_op=BinaryOp.op_mod)
+    op_and = Token(r"&")
+    op_or = Token(r"\|")
 
-    op_le         = Token(r"<=", comp_op=BinaryOp.op_le)
-    op_ge         = Token(r">=", comp_op=BinaryOp.op_ge)
-    op_ne         = Token(r"\\==", comp_op=BinaryOp.op_ne)
-    op_eq         = Token(r"==", comp_op=BinaryOp.op_eq)
-    op_decompose  = Token(r"=\.\.", comp_op=BinaryOp.op_decompose)
-    op_unify      = Token(r"=", comp_op=BinaryOp.op_unify)
-    op_lt         = Token(r"<", comp_op=BinaryOp.op_lt)
-    op_gt         = Token(r">", comp_op=BinaryOp.op_gt)
+    op_le = Token(r"<=", comp_op=BinaryOp.op_le)
+    op_ge = Token(r">=", comp_op=BinaryOp.op_ge)
+    op_ne = Token(r"\\==", comp_op=BinaryOp.op_ne)
+    op_eq = Token(r"==", comp_op=BinaryOp.op_eq)
+    op_decompose = Token(r"=\.\.", comp_op=BinaryOp.op_decompose)
+    op_unify = Token(r"=", comp_op=BinaryOp.op_unify)
+    op_lt = Token(r"<", comp_op=BinaryOp.op_lt)
+    op_gt = Token(r">", comp_op=BinaryOp.op_gt)
 
-    fullstop      = Token(r"\.")
-    comma         = Token(r",")
-    semicolon     = Token(r";")
-    at            = Token(r"@")
+    fullstop = Token(r"\.")
+    comma = Token(r",")
+    semicolon = Token(r";")
+    at = Token(r"@")
 
-    
-
+agentspeak.lexer.TokenType = TokenType
 
 RE_START_COMMENT = re.compile(r"/\*")
 RE_END_COMMENT = re.compile(r".*?\*/")
-
-
-def tokenize(sourcefile, log, firstline=1):
-    in_comment = False
-
-    for lineno, line in enumerate(sourcefile):
-        line = line.replace("\t", "    ")
-        startcol = 0
-
-        while startcol < len(line):
-            # Skip comments.
-            if in_comment:
-                match = RE_END_COMMENT.match(line, startcol)
-                if not match:
-                    break
-                else:
-                    in_comment = False
-                    startcol = match.end(0)
-                    continue
-
-            match = RE_START_COMMENT.match(line, startcol)
-            if match:
-                in_comment = True
-                startcol = match.end(0)
-                continue
-
-            # Scan next token.
-            for token_type in TokenType:
-                token = token_type.value
-                match = token.re.match(line, startcol)
-                if not match:
-                    continue
-
-                if not (token.space or token.comment):
-                    yield TokenInfo(
-                        match.group(0),
-                        token,
-                        SourceLocation(sourcefile.name, lineno + firstline, startcol, match.end(0), line))
-
-                startcol = match.end(0)
-                break
-            else:
-                log.error("illegal character '%s'", line[startcol], loc=SourceLocation(sourcefile.name, lineno + firstline, startcol, startcol, line))
-                startcol += 1
-
-
-class TokenStream(object):
-    def __init__(self, source, log, firstline=1):
-        self.tokens = tokenize(source, log, firstline=firstline)
-        self.tok = None
-
-    def peek(self):
-        return self.tok
-
-    def __next__(self):
-        self.tok = next(self.tokens)
-        return self.tok
-
-    next = __next__
-
-
-def main(source, lineno=1):
-    log = agentspeak.Log(agentspeak.get_logger(__name__), 3)
-
-    for tok in tokenize(source, log, lineno):
-        log.info("%s", tok.lexeme, loc=tok.loc)
-
-    log.throw()
-
-
-def repl():
-    lineno = 1
-    while True:
-        try:
-            line = agentspeak.util.prompt("agentspeak.lexer >>> ")
-            main(agentspeak.StringSource("<stdin>", line), lineno)
-            lineno += 1
-        except agentspeak.AggregatedError as error:
-            print(str(error), file=sys.stderr)
-        except KeyboardInterrupt:
-            print()
-            sys.exit(0)
 
 
 if __name__ == "__main__":

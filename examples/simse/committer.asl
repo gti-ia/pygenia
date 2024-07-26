@@ -1,3 +1,0 @@
-committer.
-
-{include("developer.asl")}
