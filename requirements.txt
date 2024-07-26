@@ -1,4 +1,4 @@
-agentspeak==0.2.1
+agentspeak==0.2.2
 colorama==0.4.6
 numpy==1.26.3
 pandas==2.2.1

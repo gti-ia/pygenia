@@ -4,17 +4,17 @@ me(3).
 
 !start.
 
-+!start : me(3) 
-<- 
-    -me(3); 
-    +me(2); 
++!start : me(3)
+<-
+    -me(3);
+    +me(2);
     .print_afflb;
-    .get_affst(P,A);
+    .get_affst_pa(P,A);
     .print(P,A);
     !start.
 
-+!start : me(2) 
-<-      
-    -me(2); 
++!start : me(2)
+<-
+    -me(2);
     +me(1).
 

@@ -35,7 +35,7 @@ class DefaultEngine(EmotionalEngine):
         }
 
         flag = True
-        while flag == True and self.current_step_ast in options:
+        while flag and self.current_step_ast in options:
             flag = options[self.current_step_ast]()
 
         return True

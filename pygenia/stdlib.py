@@ -11,7 +11,7 @@ import math
 @actions.add(".print_afflb")
 @agentspeak.optimizer.no_scope_effects
 def _print_afflb(agent, term, intention):
-    print(agent.AfE)
+    print(agent.emotional_engine.affective_info.get_mood())
 
     yield
 
@@ -22,20 +22,20 @@ def _print_afflb(agent, term, intention):
 def _get_affst(agent, term, intention):
     if agentspeak.unify(
         term.args[0],
-        agent.affective_info.get_mood().get_pleasure(),
+        agent.emotional_engine.affective_info.get_mood().get_pleasure(),
         intention.scope,
         intention.stack,
     ):
         if agentspeak.unify(
             term.args[1],
-            agent.affective_info.get_mood().get_arousal(),
+            agent.emotional_engine.affective_info.get_mood().get_arousal(),
             intention.scope,
             intention.stack,
         ):
             if len(term.args) > 2:
                 if agentspeak.unify(
                     term.args[2],
-                    agent.affective_info.get_mood().get_dominance(),
+                    agent.emotional_engine.affective_info.get_mood().get_dominance(),
                     intention.scope,
                     intention.stack,
                 ):

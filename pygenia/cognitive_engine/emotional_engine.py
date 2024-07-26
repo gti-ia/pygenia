@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 import agentspeak
-from pygenia.cognitive_engine.termporal_information import TemporalAffectiveInformation
+from pygenia.cognitive_engine.temporal_information import TemporalAffectiveInformation
 from typing import Iterator
 import agentspeak.runtime
 import agentspeak.stdlib
@@ -10,7 +10,7 @@ from agentspeak import AslError, asl_str
 from pygenia.utils import (
     TermQuery,
 )
-from pygenia.cognitive_engine.termporal_information import (
+from pygenia.cognitive_engine.temporal_information import (
     TemporalAffectiveInformation,
 )
 from pygenia.cognitive_engine.circumstance import Circumstance

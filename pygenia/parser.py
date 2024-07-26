@@ -162,8 +162,7 @@ class AstLiteral(AstNode):
         return "%s/%d" % (self.functor, len(self.terms))
 
     def __str__(self):
-        builder = []
-        builder.append(self.functor)
+        builder = [self.functor]
         if self.terms:
             builder.append("(")
             builder.append(", ".join(str(term) for term in self.terms))
@@ -202,7 +201,7 @@ class AstProb(AstNode):
         return visitor.visit_prob(self)
 
     def __str__(self):
-        return "%s" % (self.value_prob)
+        return f"{self.value_prob}"
 
 
 class AstPlan(AstNode):
@@ -580,21 +579,21 @@ def parse_others(tok, tokens, log):
         tok = next(tokens)
     else:
         raise log.error("expected {, got '%s'", tok.lexeme, loc=tok.loc)
-    
+
     if tok.token.functor:
         id = tok.lexeme
         others.other_agents.setdefault(id,[])
         tok = next(tokens)
-    else: 
+    else:
         raise log.error("expected functor, got '%s'", tok.lexeme, loc=tok.loc)
-    
+
     if tok.lexeme == ":":
         tok = next(tokens)
     else:
         raise log.error("expected :, got '%s'", tok.lexeme, loc=tok.loc)
-    
+
     tok, others.other_agents[id] = parse_others_array(tok, tokens, log)
-    
+
     if tok.lexeme != "}":
         raise log.error("expected }, got '%s'", tok.lexeme, loc=tok.loc)"""
 
@@ -614,8 +613,8 @@ def parse_others_list(tok, tokens, log):
         return tok, others_list
 
     if tok.token.functor:
-        id = tok.lexeme
-        others_list.setdefault(id, [])
+        id_ = tok.lexeme
+        others_list.setdefault(id_, [])
         tok = next(tokens)
     else:
         raise log.error("expected functor, got '%s'", tok.lexeme, loc=tok.loc)
@@ -625,7 +624,7 @@ def parse_others_list(tok, tokens, log):
     else:
         raise log.error("expected :, got '%s'", tok.lexeme, loc=tok.loc)
 
-    tok, others_list[id] = parse_others_array(tok, tokens, log)
+    tok, others_list[id_] = parse_others_array(tok, tokens, log)
 
     while tok.lexeme != "}":
         if tok.lexeme == ",":
@@ -634,8 +633,8 @@ def parse_others_list(tok, tokens, log):
             raise log.error("expected ',', got '%s'", tok.lexeme, loc=tok.loc)
 
         if tok.token.functor:
-            id = tok.lexeme
-            others_list.setdefault(id, [])
+            id_ = tok.lexeme
+            others_list.setdefault(id_, [])
             tok = next(tokens)
         else:
             raise log.error("expected functor, got '%s'", tok.lexeme, loc=tok.loc)
@@ -645,7 +644,7 @@ def parse_others_list(tok, tokens, log):
         else:
             raise log.error("expected :, got '%s'", tok.lexeme, loc=tok.loc)
 
-        tok, others_list[id] = parse_others_array(tok, tokens, log)
+        tok, others_list[id_] = parse_others_array(tok, tokens, log)
 
     return tok, others_list
 
@@ -676,7 +675,7 @@ def parse_others_array(tok, tokens, log):
 
 def parse_other_parameters(tok, tokens, log):
     if tok.token.functor:
-        id = tok.lexeme
+        id_ = tok.lexeme
         tok = next(tokens)
     else:
         raise log.error("expected functor, got '%s'", tok.lexeme, loc=tok.loc)
@@ -688,7 +687,7 @@ def parse_other_parameters(tok, tokens, log):
 
     tok, value = parse_arith_expr(tok, tokens, log)
 
-    return tok, id, value
+    return tok, id_, value
 
 
 def parse_plan(tok, tokens, log):
@@ -739,7 +738,7 @@ class AstConcern(AstNode):
         return visitor.visit_concern(self)
 
     def __str__(self):
-        return "%s :- %s" % (self.head, self.consequence)
+        return f"{self.head} :- {self.consequence}"
 
 
 class AstPersonality(AstNode):
@@ -754,7 +753,7 @@ class AstPersonality(AstNode):
         return visitor.visit_personality(self)
 
     def __str__(self):
-        return "%s :- %s, %s" % ("personality", self.traits, self.rationality_level)
+        return f"personality :- {self.traits}, {self.rationality_level}"
 
 
 class AstOthers(AstNode):

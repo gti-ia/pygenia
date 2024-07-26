@@ -14,6 +14,7 @@ import pygenia.lexer
 import pygenia.parser
 import pygenia.stdlib
 import pygenia.personality.personality
+from pygenia.personality.ocean_personality import OceanPersonality
 from pygenia.utils import (
     Instruction,
     BuildInstructionsVisitor,
@@ -22,7 +23,9 @@ from pygenia.utils import (
 )
 import pygenia.affective_agent
 from pygenia.affective_agent import AffectiveAgent
+from pygenia.emotion_models.pad import PAD
 from pygenia.cognitive_engine.emotional_engine import Concern
+from pygenia.cognitive_engine.default_engine import DefaultEngine
 
 LOGGER = agentspeak.get_logger(__name__)
 C = {}
@@ -46,9 +49,9 @@ class Environment(agentspeak.runtime.Environment):
         actions,
         agent_cls=agentspeak.runtime.Agent,
         name=None,
-        personality_cls=pygenia.personality.ocean_personality.OceanPersonality,
-        em_engine_cls=pygenia.cognitive_engine.default_engine.DefaultEngine,
-        affst_cls=pygenia.emotion_models.pad.PAD,
+        personality_cls=OceanPersonality,
+        em_engine_cls=DefaultEngine,
+        affst_cls=PAD,
         affst_parameters=None,
         personality_emotion_matrix=None,
     ):
@@ -286,9 +289,9 @@ class Environment(agentspeak.runtime.Environment):
         actions,
         agent_cls=agentspeak.runtime.Agent,
         name=None,
-        personality_cls=pygenia.personality.ocean_personality.OceanPersonality,
-        em_engine_cls=pygenia.cognitive_engine.default_engine.DefaultEngine,
-        affst_cls=pygenia.emotion_models.pad.PAD,
+        personality_cls= OceanPersonality,
+        em_engine_cls=DefaultEngine,
+        affst_cls=PAD,
         affst_parameters=None,
         personality_emotion_matrix=None,
     ):
@@ -318,9 +321,9 @@ class Environment(agentspeak.runtime.Environment):
         actions,
         agent_cls=Agent,
         name=None,
-        personality_cls=pygenia.personality.ocean_personality.OceanPersonality,
-        em_engine_cls=pygenia.cognitive_engine.default_engine.DefaultEngine,
-        affst_cls=pygenia.emotion_models.pad.PAD,
+        personality_cls=OceanPersonality,
+        em_engine_cls=DefaultEngine,
+        affst_cls=PAD,
         affst_parameters=None,
         personality_emotion_matrix=None,
     ):

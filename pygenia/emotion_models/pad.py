@@ -157,17 +157,16 @@ class PAD(AffectiveState):
             self.deriveASFromAppraisalVariables(affective_info)
         )
 
-    def update_affective_state(self, affective_info):
+    def update_affective_state(self, emotions):
         """
         This method is used to update the affective state.
         """
         self.displacement = 0.5
-        pad = PAD()
         calculated_as = (
-            affective_info.get_elicited_emotions()
+            emotions
         )  # self.deriveASFromAppraisalVariables(affective_info)
 
-        if calculated_as != None:
+        if calculated_as is not None:
             # PAD current_as = (PAD) getAS();
 
             tmpVal = None
